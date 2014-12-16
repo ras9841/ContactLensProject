@@ -2,7 +2,7 @@
 using namespace std;
 
 double func(double num){
-	return 2*num +1;
+	return 2*num*num;
 }
 
 double bisectorMethod(double left, double right, double err, double depth){
