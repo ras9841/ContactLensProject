@@ -25,6 +25,6 @@ int main(){
 
 	// display elapsed time
 	duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
-	cout << "Time: " << duration << "\n";
+	cout << "Time: " << duration << "s \n";
 	//
 }
