@@ -21,7 +21,7 @@
 
 #define dr 1
 #define dz 1
-#define r(i,j) std::sqrt(i**2 + j**2)
+#define r(i,j) i
 
 //
 // Functions
@@ -66,5 +66,12 @@ void gs_method(int i, int j, std::vector<std::vector<double>>& R, std::vector<st
 
 
 		}
+	}
+
+	else{ // interior points
+
+		double T = (R[i + 1][j] + R[i - 1][j] ) / (dr^ 2) * (1+1/(1-2*SIGMA)) - (R[i][j+1]+R[i][j-1])/(dz^2);
+		double S = 1 / (r(i, j));
+
 	}
 }
