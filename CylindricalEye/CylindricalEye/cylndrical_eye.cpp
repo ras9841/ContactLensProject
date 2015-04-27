@@ -36,7 +36,7 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, thickness of undeformed CL
 
 #define dr 1.0/M
 #define dz 1.0/N
-#define r(i,j) (i)*dr
+#define r(i,j) j
 #define P(i,j) (i) //((E*TAU^3*56*H)/(12*(1-SIGMA^2)*(R_EDGE)^4))
 
 //
@@ -79,7 +79,7 @@ int main(){
 	while (count < NUM_ITER){
 		// (0,0)
 		R[0][0] = 0;
-		W[0][0] = ((dr*dr) * (dz)) / ((dr*dr)*(1 - SIGMA) - 4 * dz*(1 - 2 * SIGMA))*(-4 / ((dr*dr))*(1 - 2 * SIGMA)*W[1][0] - (1 - SIGMA) 
+		W[0][0] = ((dr*dr) * (dz)) / ((dr*dr)*(1 - SIGMA) - 4 * dz*(1 - 2 * SIGMA))*(-4 / ((dr*dr))*(1 - 2 * SIGMA)*W[1][0] - (1 - SIGMA)
 			/ (dz)*(3 * W[2][0] - 4 * W[1][0]));
 
 		// (0,N)
@@ -93,27 +93,52 @@ int main(){
 		// (M,N)
 		R[M][N] = -(((SIGMA - 1) / dr - (1 - SIGMA) / dz)*W[M][N - 1] - ((SIGMA - 1)*(SIGMA - 1) / (SIGMA*dr) + SIGMA / dr)*R[M - 1][N]
 			+ (1 + SIGMA)*(1 - 2 * SIGMA)*P(M, N) * 1 / E) / (((SIGMA - 1)*(SIGMA - 1) + (SIGMA*SIGMA)) / (SIGMA*dr) + 1 / r(M, N));
-		W[M][N] = (-SIGMA*(1 / dr + 1 / (r(M, N)))*R[M][N] + (1 - SIGMA) / dz*W[M][N - 1] + SIGMA / dr*R[M - 1][N] - (1 + SIGMA)*(1 - 2 * SIGMA)*P(M, N) / E) / ((1 - SIGMA) / dz);
+		W[M][N] = (-SIGMA*(1 / dr + 1 / (r(M, N)))*R[M][N] + (1 - SIGMA) / dz*W[M][N - 1] + SIGMA / dr*R[M - 1][N] - (1 + SIGMA)
+			*(1 - 2 * SIGMA)*P(M, N) / E) / ((1 - SIGMA) / dz);
 
 		
-		// j = 0 (lower bound w/o corners)
-		for (int i = 1; i < M; i++){
-			R[i][0] = (1 / 3)*(dz / dr*(W[i + 1][0] - W[i - 1][0]) - R[i][2] + 4 * R[i][1]);
-			W[i][0] = (-1 / 3)*((2 * dz / (1 - SIGMA))*((1 - 2 * SIGMA) / (2 * dz))*(4 * W[i][1] - W[i][2])
-				+ SIGMA*((R[i + 1][0] - R[i - 1][0]) / (2 * dr) + R[i][0] / r(i, 0) + (4 * W[i + 1][0] - 3 * W[i][2]) / (2 * dz)));
+		// i = 0 (lower bound w/o corners)
+		for (int j = 1; j < N; j++){
+			R[0][j] = r(0, j)*(1 - SIGMA) / SIGMA*(R[0][j - 1] - R[0][j + 1]) / (2 * dr) - r(0, j)*(W[1][j] - W[0][j]) / dz;
+			W[0][j] = W[1][j] + (SIGMA*dz / (1 - SIGMA)) *((R[0][j + 1] - R[0][j - 1]) / (2 * dr) + R[0][j] / r(0, j));
 		}
+
+		// i = M (top bound w/o corners)
+		for (int j = 1; j < M; j++){
+			R[M][j] = R[M - 1][j] - dz*(W[M][j + 1] - W[M][j - 1]) / (2 * dr);
+			W[M][j] = W[M - 1][j] - dz*(1 + SIGMA)*(1 - 2 * SIGMA)*P(M, j) / ((1 - SIGMA)*E)
+				- (dz*SIGMA / (1 - SIGMA))*((R[M][j + 1] - R[M][j - 1]) / (2 * dr)+R[M][j]/r(M,j));
+		}
+
+		// j = 0 (left bound w/o corners)
+		for (int i = 2; i < M-1; i++){
+			R[i][0] = 0;
+			W[i][0] = (2/(dr*dr)*(2*W[i][1]-W[i][2])-((1-SIGMA)/(2*dz*dz*(1-2*SIGMA)))*(W[i+2][0]+W[i-2][0]))
+				/(2/(dr*dr)-(1-SIGMA)/(dz*dz*(1-2*SIGMA)));
+		}
+		R[1][0] = 0;
+		W[1][0] = (2 / (dr*dr)*(2 * W[1][1] - W[1][2]) - (2*(1 - SIGMA) / (dz*dz*(1 - 2 * SIGMA)))*(W[3][0] - W[2][0]))
+			/ (2 / (dr*dr) - 2*(1 - SIGMA) / (dz*dz*(1 - 2 * SIGMA)));
+		R[M - 1][0] = 0;
+		W[M - 1][0] = 0;
 
 		// i = M (right boundary w/o corners)
 		for (int j = 1; j < N; j++){
-			R[M][j] = -((2 * dr*SIGMA) / (1 - SIGMA)*((W[M][j + 1] - W[M][j - 1]) / (2 * dz)) - 4 * R[M - 1][j] + R[M - 2][j])
+			/*
+			R[M][j] =  -((2 * dr*SIGMA) / (1 - SIGMA)*((W[M][j + 1] - W[M][j - 1]) / (2 * dz)) - 4 * R[M - 1][j] + R[M - 2][j])
 				/ (3 + (2 * dr*SIGMA) / (1 - SIGMA));
 
 			W[M][j] = (4 * W[M - 1][j] - W[M - 2][j] - (dr / dz)*(R[M][j + 1] - R[M][j - 1])) / 3;
+			*/
 		}
 		
 		// Inside points
 		for (int i = 1; i < M; i++){
 			for (int j = 1; j < N; j++){
+				R[i][j] = 2;
+				W[i][j] = 2;
+
+				/*
 				double T = (R[i + 1][j] + R[i - 1][j]) / (dr*dr) *(1 + 1 / (1 - 2 * SIGMA)) - (R[i][j + 1] + R[i][j - 1]) / (dz*dr);
 				double S = (1 / r(i, j))*((R[i][j + 1] - R[i - 1][j]) / (2 * dr) + (W[i + 1][j + 1] - W[i - 1][j + 1] + W[i - 1][j - 1]) / (4 * dr*dz));
 
@@ -126,29 +151,15 @@ int main(){
 					
 				W[i][j] = -((dz*dz)*(dr*dr)*(1 - 2 * SIGMA)) / ((dz *dz)*(2 - 4 * SIGMA) + (dr *dr)*(4 - 4 * SIGMA))*(H - (W[i + 1][j] + W[i - 1][j]) / (dr*dr)
 					- (W[i][j + 1] - W[i][j - 1]) / ((dz*dr)*(1 - 2 * SIGMA)));
+				*/
 			}
 		}
-		
-		
-		// i = 0 (left bound w/o corners)
-		for (int j = 1; j < N; j++){
-			R[0][j] = 0;
-			W[0][j] = .5*((2 * W[1][j]) / (dr * dr) + (4 * (1 - SIGMA)) / (1 - 2 * SIGMA)*(W[0][1]) / ((dz *dr))
-				/ ((1 - SIGMA) / ((1 - 2 * SIGMA)*(dz *dr)) + 1 / (dr *dr)));
-		}
 
-		// j = N (top bound w/o corners)
-		for (int i = 1; i < M; i++){
-			R[i][N] = (4 * R[i][N - 1] - R[i][N - 2] + (dz) / (dr)*(W[i - 1][N] - W[i + 1][N])) / 3;
-			W[i][N] = (4 * W[i][N - 1] - W[i][N - 2]) / (3 * E*(1 - SIGMA)) - (2 * (dz)*SIGMA) / (3 * (1 - SIGMA))*((R[i + 1][N] - R[i - 1][N]) / (2 * dr) + R[i][N] / r(i, N))
-				+ ((P(i, N))*(1 + SIGMA)*(1 - 2 * SIGMA)*(2 * dz)) / (3 * E*(1 - SIGMA));
-		}
-		
 		count++;
 
 		char a;
-		for (size_t i = 0; i < M + 1; i++){
-			for (size_t j = 0; j < N; j++){
+		for (size_t i = M; i < -1; i--){
+			for (size_t j = 0; j < N+1; j++){
 				std::cout << R[i][j] << ", ";
 			}
 			std::cout << "\n";
@@ -157,6 +168,7 @@ int main(){
 
 	}
 	std::cin >> a;
+
 	return 0;
 }
 
