@@ -148,8 +148,22 @@ int main(){
 		// Inside points
 		for (int i = 1; i < M; i++){
 			for (int j = 1; j < N; j++){
-				R[i][j] = 0;
-				W[i][j] = 0;
+				R[i][j] = ( 
+					2*(1-SIGMA)/(1-2*SIGMA)*(R[i][j+1]+R[i][j-1])/(dr*dr)
+					+ 2*(1-SIGMA)/(r(i,j)*(1-2*SIGMA)*2*dr)*(R[i][j+1]-R[i][j-1])  
+					+ (R[i+1][j]+R[i-1][j])/(dz*dz) 
+					+ (W[i+1][j+1]-W[i+1][j-1]-W[i-1][j+1]+W[i-1][j-1])
+						/(4*dr*dz*(1-2*SIGMA)) 
+					)  
+					/ (4*(1-SIGMA))/(dr*dr*(1-2*SIGMA)+2/(dz*dz)+1/(r(i,j)*(1-2*SIGMA)));
+				W[i][j] = (
+					(W[i][j+1]+W[i][j-1])*(1/(dr*dr)+ 1/(r(i,j)*2*dr))
+					+ 2*(1-SIGMA)/(dz*dz*(1-2*SIGMA))*(W[i+1][j]+W[i-1][j])
+					+ ( (R[i+1][j]-R[i-1][j])/(2*dz*r(i,j)) + 
+						(R[i+1][j+1]-[R+1][j-1]-R[i-1][j+1]+R[i-1][j-1])/(4*dr*dz) )
+						/(1-2*SIGMA) 
+					)
+					/ (2/(dr*dr)+4*(1-SIGMA)/(dz*dz*(1-2*SIGMA)));
 			}
 		}
 
