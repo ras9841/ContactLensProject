@@ -16,24 +16,25 @@
 #include <cmath>
 #include <vector>
 
+
 //
 // Globals
 //
 
 const int M = 5;
 const int N = 5;
-const double E = std::pow(10,6);			// dynes/cm^s
-const double SIGMA = .5;					//     Poisson's ration of CL
-const double R_EDGE = .7;					// cm, radius of undeformed CL
-const double H = 3 * std::pow(10,-4);		// cm, PLTF thickness
-const double TAU = 4 * std::pow(10 ,-3);	// cm, thickness of undeformed CL
+const double E = std::pow(10,6);		// dynes/cm^2,	Young's modulus of eye	
+const double SIGMA = .5;			//     		Poisson's ration of CL
+const double R_EDGE = .7;			// cm, 		radius of undeformed CL
+const double H = 3 * std::pow(10,-4);		// cm, 		PLTF thickness
+const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
+
 
 //
 // Macros
 //
 
 #define NUM_ITER 5
-
 #define dr 1.0/M
 #define dz 1.0/N
 #define r(i,j) j
@@ -51,8 +52,7 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, thickness of undeformed CL
 // Postconditions:
 // 	pressure at the point (i,j) calculated and returned.
 double P(int i, int j){
-	return 2;
-	//return ((E*std::pow(TAU,3)*56*H)/(12*(1-SIGMA*SIGMA)*std::pow(R_EDGE,4)));
+	return ((E*std::pow(TAU,3)*56*H)/(12*(1-SIGMA*SIGMA)*std::pow(R_EDGE,4)));
 }
 
 // Main functino in the cylindrical solution.
@@ -89,43 +89,38 @@ int main(){
 	
 	int count = 0;
 	while (count < NUM_ITER){
-		// (0,0)
+		// (0,0) (lower left corner)
 		R[0][0] = 0;
-		W[0][0] = ((dr*dr) * (dz)) / ((dr*dr)*(1 - SIGMA) - 4 * dz*(1 - 2 * SIGMA))
-			* (-4 / ((dr*dr))*(1 - 2 * SIGMA)*W[1][0] - (1 - SIGMA)
-			/ (dz)*(3 * W[2][0] - 4 * W[1][0]));
+		W[0][0] = W[1][0]+2*SIGMA*dz/((1-SIGMA)*dr)*R[0][1];
 
-		// (0,N)
-		R[0][N] = 0;
-		W[0][N] = W[0][N-1]-(2 * SIGMA*dz)/(1 - SIGMA) * R[1][N]/dr 
-			- (dz*(1+SIGMA)*(1 - 2 * SIGMA)*P(0, N)) / ((1 - SIGMA)*E);
+		// (0,M) (top left corner)
+		R[M][0] = 0;
+		W[M][0] = W[M-1][0] - (dz/(1-SIGMA))
+			* ( 2*SIGMA/dr*R[M][1] +(1+SIGMA)*(1-2*SIGMA)*P(M,0)/E ); 
 
-		// (M,0)
-		R[M][0] = R[M][1] - dz / dr*W[M - 1][0];
-		W[M][0] = 0;
+		// (N,0) (lower right corner) 
+		R[0][N] = R[1][N] - (dz/dr)*W[0][N-1];
+		W[0][N] = 0;
 
-		// (M,N)
-		R[M][N] = -(((SIGMA - 1) / dr - (1 - SIGMA) / dz)*W[M][N-1] - ((SIGMA - 1)
-			* (SIGMA - 1) / (SIGMA*dr) + SIGMA / dr)*R[M-1][N] + (1 + SIGMA)*(1 - 
-			2 * SIGMA)*P(M, N) * 1 / E) / (((SIGMA - 1)*(SIGMA - 1) + (SIGMA*SIGMA)) 
-			/ (SIGMA*dr) + 1 / r(M, N));
-		W[M][N] = (-SIGMA*(1 / dr + 1 / (r(M, N)))*R[M][N] + (1 - SIGMA) / dz
-			* W[M][N-1] + SIGMA / dr*R[M-1][N] - (1 + SIGMA)
-			* (1 - 2 * SIGMA)*P(M, N) / E) / ((1 - SIGMA) / dz);
+		// (N,M) (top right corner)
+		R[M][N] = ( SIGMA*R[M][N-1]/dr - (1-SIGMA)*(W[M][N]- W[M-1][N])/dz  
+			- (1+SIGMA)*(1-2*SIGMA)*P(M,N)/E )
+			/ (SIGMA*(1/dr+1/r(M,N)));  
+		W[M][N] = W[M][N-1] - (dr/dz)*(R[M][N]-R[M-1][N]);
 
 		
 		// i = 0 (lower bound w/o corners)
 		for (int j = 1; j < N; j++){
-			R[0][j] = r(0, j)*(1 - SIGMA) / SIGMA*(R[0][j - 1] - R[0][j + 1]) 
-				/ (2 * dr) - r(0, j)*(W[1][j] - W[0][j]) / dz;
-			W[0][j] = W[1][j] + (SIGMA*dz / (1 - SIGMA)) *((R[0][j + 1] - R[0][j - 1]) 
-				/ (2 * dr) + R[0][j] / r(0, j));
+			R[0][j] = r(0, j)*(1 - SIGMA) / SIGMA*(R[0][j-1] - R[0][j+1]) 
+				/ (2*dr) - r(0, j)*(W[1][j] - W[0][j]) / dz;
+			W[0][j] = W[1][j] + (SIGMA*dz / (1 - SIGMA)) *((R[0][j+1] - R[0][j-1]) 
+				/ (2*dr) + R[0][j] / r(0, j));
 		}
 
 		// i = M (top bound w/o corners)
 		for (int j = 1; j < N; j++){
 			R[M][j] = R[M-1][j] - dz*(W[M][j+1] - W[M][j-1]) / (2 * dr);
-			W[M][j] = W[M-1][j] - dz*(1 + SIGMA)*(1 - 2 * SIGMA)*P(M, j) 
+			W[M][j] = W[M-1][j] - dz*(1 + SIGMA)*(1 - 2*SIGMA)*P(M, j) 
 				/ ((1 - SIGMA)*E) - (dz*SIGMA / (1 - SIGMA))*((R[M][j+1] - R[M][j-1]) 
 				/ (2 * dr)+R[M][j]/r(M,j));
 		}
@@ -148,6 +143,8 @@ int main(){
 		// Inside points
 		for (int i = 1; i < M; i++){
 			for (int j = 1; j < N; j++){
+				//R[i][j] = 2;
+				//W[i][j] = 2;
 				R[i][j] = ( 
 					2*(1-SIGMA)/(1-2*SIGMA)*(R[i][j+1]+R[i][j-1])/(dr*dr)
 					+ 2*(1-SIGMA)/(r(i,j)*(1-2*SIGMA)*2*dr)*(R[i][j+1]-R[i][j-1])  
@@ -155,12 +152,13 @@ int main(){
 					+ (W[i+1][j+1]-W[i+1][j-1]-W[i-1][j+1]+W[i-1][j-1])
 						/(4*dr*dz*(1-2*SIGMA)) 
 					)  
-					/ (4*(1-SIGMA))/(dr*dr*(1-2*SIGMA)+2/(dz*dz)+1/(r(i,j)*(1-2*SIGMA)));
+					/ ((4*(1-SIGMA))/(dr*dr*(1-2*SIGMA)+2/(dz*dz)
+						+ 1/(r(i,j)*(1-2*SIGMA))));
 				W[i][j] = (
 					(W[i][j+1]+W[i][j-1])*(1/(dr*dr)+ 1/(r(i,j)*2*dr))
 					+ 2*(1-SIGMA)/(dz*dz*(1-2*SIGMA))*(W[i+1][j]+W[i-1][j])
 					+ ( (R[i+1][j]-R[i-1][j])/(2*dz*r(i,j)) + 
-						(R[i+1][j+1]-[R+1][j-1]-R[i-1][j+1]+R[i-1][j-1])/(4*dr*dz) )
+					  (R[i+1][j+1]-R[i+1][j-1]-R[i-1][j+1]+R[i-1][j-1])/(4*dr*dz) )
 						/(1-2*SIGMA) 
 					)
 					/ (2/(dr*dr)+4*(1-SIGMA)/(dz*dz*(1-2*SIGMA)));
@@ -176,7 +174,7 @@ int main(){
 			}
 			std::cout << "\n";
 		}
-		std::cin >> a;
+		std::cout << "\n\n";
 
 	}
 	std::cin >> a;
