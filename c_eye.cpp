@@ -1,5 +1,5 @@
 //
-// File: cylindrical_eye.cpp
+// File: c_eye.cpp
 //
 // Main file in solving the cylindrical eye problem. Initializes the 
 // displacement functions R and W and solves for their values iteratively.
@@ -13,8 +13,8 @@
 //
 
 #include <iostream>
+#include <stdio.h>
 #include <cmath>
-#include <vector>
 
 
 //
@@ -34,7 +34,7 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 // Macros
 //
 
-#define NUM_ITER 5
+#define NUM_ITER 1
 #define dr 1.0/M
 #define dz 1.0/N
 #define r(i,j) (j)
@@ -44,6 +44,8 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 // Functions
 //
 
+void print_disp(double function[][N+1]);
+
 // Pressure function. Used to calculate the pressure due the a contact lens
 // on the top boundary.
 //
@@ -52,7 +54,8 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 // Postconditions:
 // 	pressure at the point (i,j) calculated and returned.
 double P(int i, int j){
-	return ((E*std::pow(TAU,3)*56*H)/(12*(1-SIGMA*SIGMA)*std::pow(R_EDGE,4)));
+	return 0;
+	//return ((E*std::pow(TAU,3)*56*H)/(12*(1-SIGMA*SIGMA)*std::pow(R_EDGE,4)));
 }
 
 // Main functino in the cylindrical solution.
@@ -68,7 +71,7 @@ int main(){
 
 	// Populate R and W
 	double R[M+1][N+1];
-	double W[M + 1][N + 1];
+	double W[M+1][N+1];
 	
 	std::cout << "Initial Guess: \n";
 
@@ -80,13 +83,7 @@ int main(){
 		}
 	}
 
-	char a;
-	for (size_t i = 0; i < M + 1; i++){
-		for (size_t j = 0; j < N; j++){
-			std::cout << R[i][j] << ", ";
-		}
-		std::cout << "\n";
-	}
+	print_disp(R);	
 	
 	std::cout << "\n";
 	
@@ -140,9 +137,9 @@ int main(){
 
 		// j = N (right boundary w/o corners)
 		for (int i = 1; i < M; i++){
-			R[i][N] = (R[i][N-1]/dr - (1-SIGMA)/(2*SIGMA*dz)*(W[i+1][N] - W[i-1][N]))
-				/ (1/dr + 1/r(i,N));
-			W[i][N] = W[i][N-1]- (dr/(2*dz))*(R[i+1][N]- R[i-1][N]);
+			R[i][N] = (R[i][N-1]/dr  - (1-SIGMA)/(2*SIGMA*dz)*(W[i+1][N] - W[i-1][N]))
+			 	/ (1/dr + 1/r(i,N));
+			W[i][N] =  W[i][N-1] - (dr/(2*dz))*(R[i+1][N]- R[i-1][N]);
 		}
 		
 		// Inside points
@@ -169,21 +166,45 @@ int main(){
 		}
 
 		count++;
-
-		char a;
-		for (size_t i = M; i < -1; i--){
-			for (size_t j = 0; j < N+1; j++){
-				std::cout << R[i][j] << ", ";
-			}
-			std::cout << "\n";
-		}
-		std::cout << "\n\n";
-
-	}
-	//std::cin >> a;
-
+		//print_disp(R);	
+	}	
+	printf("R:\n");
+	print_disp(R);
+	printf("W:\n");
+	print_disp(W);
 	return 0;
 }
 
+// print_disp() displays the specified displacement function. All printed 
+// values are rounded to 15 decimal places. The functions are printed in
+// the following orientation:
+//
+// 	[M][0]  |---------------| [M][N]
+// 		|---------------|
+// 		|---------------|
+// 		|---------------|
+//		|---------------|
+//	[0][0]	|---------------| [0][N]
+//
+// Preconditions:
+// 	the display function corresponding to the input character has 
+// 		been initialized.
+// Postconditions:
+// 	function printed.
+void print_disp(double function[][N+1]){
+	for (size_t i = M; i < -1; i--){
+		for (size_t j = 0; j < N+1; j++){
+			if (function[i][j] < 1*std::pow(10,-15)){
+				std::cout << "0.00000e+00, ";
+			}
+			else{
+				std::cout << function[i][j] << ", ";
+				//printf("%f, ", function[i][j]);
+			}
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n\n";
+}
 
 
