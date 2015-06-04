@@ -26,6 +26,7 @@ const int N = 5;
 const double E = std::pow(10,6);		// dynes/cm^2,	Young's modulus of eye	
 const double SIGMA = .4;			//     		Poisson's ration of CL
 const double R_EDGE = .7;			// cm, 		radius of undeformed CL
+const double DEPTH = 1;
 const double H = 3 * std::pow(10,-4);		// cm, 		PLTF thickness
 const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 
@@ -35,10 +36,9 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 //
 
 #define NUM_ITER 1
-#define dr 1.0/M
-#define dz 1.0/N
-#define r(i,j) (j)
-
+#define dr R_EDGE/N
+#define dz DEPTH/M
+#define r(i,j) (j*dr)
 
 //
 // Functions
@@ -54,7 +54,7 @@ void print_disp(double function[][N+1]);
 // Postconditions:
 // 	pressure at the point (i,j) calculated and returned.
 double P(int i, int j){
-	return 0;
+	return 0; //.49-r(i,j)*r(i,j);
 	//return ((E*std::pow(TAU,3)*56*H)/(12*(1-SIGMA*SIGMA)*std::pow(R_EDGE,4)));
 }
 
@@ -77,14 +77,20 @@ int main(){
 
 	// Initialize R and W
 	for (size_t i = 0; i < M + 1; i++){
-		for (size_t j = 0; j < N; j++){
+		for (size_t j = 0; j < N+1; j++){
 			R[i][j] = 0.00;
 			W[i][j] = 0.00;
 		}
 	}
-
+	
+	printf("R:\n");
 	print_disp(R);	
 	
+	printf("W:\n");
+	print_disp(W);	
+	
+	printf("-----\n");
+
 	std::cout << "\n";
 	
 	int count = 0;
@@ -137,9 +143,10 @@ int main(){
 
 		// j = N (right boundary w/o corners)
 		for (int i = 1; i < M; i++){
-			R[i][N] = (R[i][N-1]/dr  - (1-SIGMA)/(2*SIGMA*dz)*(W[i+1][N] - W[i-1][N]))
-			 	/ (1/dr + 1/r(i,N));
-			W[i][N] =  W[i][N-1] - (dr/(2*dz))*(R[i+1][N]- R[i-1][N]);
+			R[i][N] = 1; 
+				//( (1-SIGMA)*R[i][N-1]/dr  - (SIGMA)/(2*dz)*(W[i+1][N] - W[i-1][N]))
+			 	  /// ((1-SIGMA)/dr + SIGMA/r(i,N));
+			W[i][N] = W[i][N-1] - (dr/(2*dz))*(R[i+1][N]- R[i-1][N]);
 		}
 		
 		// Inside points
@@ -166,7 +173,6 @@ int main(){
 		}
 
 		count++;
-		//print_disp(R);	
 	}	
 	printf("R:\n");
 	print_disp(R);
@@ -194,12 +200,11 @@ int main(){
 void print_disp(double function[][N+1]){
 	for (size_t i = M; i < -1; i--){
 		for (size_t j = 0; j < N+1; j++){
-			if (function[i][j] < 1*std::pow(10,-15)){
-				std::cout << "0.00000e+00, ";
+			if (std::abs(function[i][j]) == 0){// 1*std::pow(10,-15)){
+				std::cout << "0.00000e+01,\t";
 			}
 			else{
-				std::cout << function[i][j] << ", ";
-				//printf("%f, ", function[i][j]);
+				std::cout << function[i][j] << ",\t";
 			}
 		}
 		std::cout << "\n";
