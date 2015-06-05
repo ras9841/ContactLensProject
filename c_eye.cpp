@@ -26,7 +26,7 @@ const int N = 5;
 const double E = std::pow(10,6);		// dynes/cm^2,	Young's modulus of eye	
 const double SIGMA = .4;			//     		Poisson's ration of CL
 const double R_EDGE = .7;			// cm, 		radius of undeformed CL
-const double DEPTH = 1;
+const double DEPTH = .7;
 const double H = 3 * std::pow(10,-4);		// cm, 		PLTF thickness
 const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 
@@ -36,9 +36,10 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 //
 
 #define NUM_ITER 1
-#define dr R_EDGE/N
-#define dz DEPTH/M
 #define r(i,j) (j*dr)
+#define dr (R_EDGE/N)
+#define dz (DEPTH/M)
+
 
 //
 // Functions
@@ -89,7 +90,7 @@ int main(){
 	printf("W:\n");
 	print_disp(W);	
 	
-	printf("-----\n");
+	printf("-----> Final Solution after (%d) iterations\n", NUM_ITER);
 
 	std::cout << "\n";
 	
@@ -143,25 +144,28 @@ int main(){
 
 		// j = N (right boundary w/o corners)
 		for (int i = 1; i < M; i++){
-			R[i][N] = 1; 
-				//( (1-SIGMA)*R[i][N-1]/dr  - (SIGMA)/(2*dz)*(W[i+1][N] - W[i-1][N]))
-			 	  /// ((1-SIGMA)/dr + SIGMA/r(i,N));
+			R[i][N] =  
+				( (1-SIGMA)*R[i][N-1]/dr  - (SIGMA)/(2*dz)*(W[i+1][N] - W[i-1][N]))
+			 	/ ((1-SIGMA)/dr + SIGMA/r(i,N));
 			W[i][N] = W[i][N-1] - (dr/(2*dz))*(R[i+1][N]- R[i-1][N]);
 		}
 		
 		// Inside points
 		for (int i = 1; i < M; i++){
 			for (int j = 1; j < N; j++){
-				R[i][j] = ( 
-					2*(1-SIGMA)/(1-2*SIGMA)*(R[i][j+1]+R[i][j-1])/(dr*dr)
-					+ 2*(1-SIGMA)/(r(i,j)*(1-2*SIGMA)*2*dr)*(R[i][j+1]-R[i][j-1])  
-					+ (R[i+1][j]+R[i-1][j])/(dz*dz) 
-					+ (W[i+1][j+1]-W[i+1][j-1]-W[i-1][j+1]+W[i-1][j-1])
-						/(4*dr*dz*(1-2*SIGMA)) 
-					)  
-					/ ((4*(1-SIGMA))/(dr*dr*(1-2*SIGMA)+2/(dz*dz)
-						+ 1/(r(i,j)*(1-2*SIGMA))));
-				W[i][j] = (
+				R[i][j] = (
+					  2*(1-SIGMA)*(R[i][j+1]+R[i][j-1])/( dr*dr  ) 
+					+ (1-SIGMA)*(R[i][j+1]-R[i][j-1])/( r(i,j)*dr  )
+					+ (1-2*SIGMA)*(R[i+1][j]+R[i-1][j])/( dz*dz )
+					+ (W[i+1][j+1]-W[i+1][j-1]-W[i-1][j+1]+W[i-1][j-1])/( 4*dr*dz )
+					) / 
+					( 
+					  4*(1-SIGMA)/( dr*dr )
+					+ 2*(1-2*SIGMA)/( dz*dz )
+					+ 1/( r(i,j)*r(i,j) )
+					);
+				W[i][j] = 
+					(
 					(W[i][j+1]+W[i][j-1])*(1/(dr*dr)+ 1/(r(i,j)*2*dr))
 					+ 2*(1-SIGMA)/(dz*dz*(1-2*SIGMA))*(W[i+1][j]+W[i-1][j])
 					+ ( (R[i+1][j]-R[i-1][j])/(2*dz*r(i,j)) + 
