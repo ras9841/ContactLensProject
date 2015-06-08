@@ -54,6 +54,11 @@ to compile then run the program.
 
 ##<a name="2"></a>2. Implementation [[top](#clp)]
 ###<a name="2.1"></a>2.1 Gauss-Seidel method
-The general technique we used to solve our cylindrical eye problem was the Gauss-Seidel method. Here, we will provide a brief introduction to the method. 
+The general technique we used to solve our cylindrical eye problem was the Gauss-Seidel method (GSM). Here, we will provide a brief introduction to the method.  
+  
+GSM is used to solve linear systems of equations in the form $Ax=b$ one equation at a time. During each iteration, the new values are calculated from the old values. An initial guess is initialized to serve as the "old" values for the first run through. This process continues continues until a predefined convergence condition is satisfied. GSM requires the matrix $A$ to be strictly diagonally dominant or symmetric positive. 
+ 
+
+ 
 ###<a name="2.2"></a>2.2 Finite difference method
 
