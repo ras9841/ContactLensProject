@@ -22,7 +22,6 @@
 //
 
 #define NUM_ITER 2500
-#define r(i,j) (j*dr)
 #define dr (R_EDGE/N)
 #define dz (DEPTH/M)
 
@@ -46,6 +45,11 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 //
 
 void print_disp(double function[][N+1]);
+
+double r(int i, int j){
+	return j * dr;
+}
+
 
 // Pressure function. Used to calculate the pressure due the a contact lens
 // on the top boundary.
