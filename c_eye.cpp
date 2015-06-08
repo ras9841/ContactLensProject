@@ -123,7 +123,7 @@ int main(){
 		
 		// i = 0 (lower bound w/o corners)
 		for (int j = 1; j < N; j++){
-			R[0][j] = R[1][j]+dz/(2*dr)*(W[0][j+1]-W[0][j-1]);
+			R[0][j] = R[1][j] + dz/(2*dr)*( W[0][j+1]-W[0][j-1] );
 			W[0][j] = 0;
 				/// W[1][j] + (SIGMA*dz / (1 - SIGMA)) *((R[0][j+1] - R[0][j-1]) 
 				// / (2*dr) + R[0][j] / r(0, j));
@@ -132,18 +132,24 @@ int main(){
 		// i = M (top bound w/o corners)
 		for (int j = 1; j < N; j++){
 			R[M][j] = R[M-1][j] - dz *(W[M][j+1] - W[M][j-1]) / (2 * dr);
-			W[M][j] = W[M-1][j] - dz*(1 + SIGMA)*(1 - 2*SIGMA)*P(M, j) 
-			 	/ ((1 - SIGMA)*E) - (dz*SIGMA / (1 - SIGMA))*((R[M][j+1] - R[M][j-1]) 
-				/ (2 * dr)+R[M][j]/r(M,j));
+			W[M][j] = W[M-1][j] 
+				- dz*(1 + SIGMA)*(1 - 2*SIGMA)*P(M, j)/((1 - SIGMA)*E) 
+				- ( dz*SIGMA / (1 - SIGMA) )*
+				(
+					(R[M][j+1] - R[M][j-1])/(2*dr)
+					+ R[M][j]/r(M,j) 
+				);
 		}
 		
 		// j = 0 (left bound w/o corners)
 		for (int i = 1; i < M; i++){
 			R[i][0] = 0;
 			W[i][0] =  
-				( 2/(dr*dr)*W[i][1]  - ( (1-SIGMA)/(dz*dz*(1-2*SIGMA)) )  
-				* (W[i+1][0]+W[i-1][0]) ) 
-				/ ( 2/(dr*dr)-2*(1-SIGMA)/(dz*dz*(1-2*SIGMA)) );
+				( 
+				2/(dr*dr)*W[i][1]  
+				+ ( (1-SIGMA)/(dz*dz*(1-2*SIGMA)) )*(W[i+1][0]+W[i-1][0]) 
+				) 
+				/ ( 2/(dr*dr)+2*(1-SIGMA)/(dz*dz*(1-2*SIGMA)) );
 		}
 
 
