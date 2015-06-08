@@ -10,6 +10,8 @@ Maintained by Roland Sanford (<ras9841@rit.edu>).
 2. [Implementation](#2)
   1. [Gauss-Seidel method](#2.1)
   2. [Finite difference method](#2.2)
+
+
 ##<a name="1"></a>1. Setup [[top](#clp)]
 ###<a name="1.1"></a>1.1 Development Conditions
 The code for `c_eye.cpp` was written in C++ using the gcc (GCC) 4.9.2 (Red Hat 4.9.2-6) GNU compiler.
