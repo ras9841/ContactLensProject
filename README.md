@@ -1,7 +1,7 @@
 <a name="clp">ContactLensProject</a>
 =====================================
 Maintained by Roland Sanford (<ras9841@rit.edu>).
-<a name="top"></a>
+  
 ##Table of Contents
 
 1. [Setup](#1)
@@ -9,8 +9,8 @@ Maintained by Roland Sanford (<ras9841@rit.edu>).
   2. [Compiling and Running](#1.2)
 2. [Implementation](#2)
   1. [Gauss-Seidel method](#2.1)
-  2. [Finite difference method](#2.2)
-
+  2. [Finite-difference method](#2.2)
+  3. [General pseudocode](#2.3)
 
 ##<a name="1"></a>1. Setup [[top](#clp)]
 ###<a name="1.1"></a>1.1 Development Conditions
@@ -54,9 +54,20 @@ to compile then run the program.
 
 ##<a name="2"></a>2. Implementation [[top](#clp)]
 ###<a name="2.1"></a>2.1 Gauss-Seidel method
-The general technique we used to solve our cylindrical eye problem was the Gauss-Seidel method (GSM). Here, we will provide a brief introduction to the method.  
+We the Gauss-Seidel method (GSM) is our general technique for solving the cylindrical eye problem. In this section, we will provide a brief introduction to the method.  
   
-GSM is used to solve linear systems of equations in the form `Ax=b` one equation at a time. During each iteration, the new values are calculated from the old values. An initial guess is initialized to serve as the "old" values for the first run through. This process continues continues until a predefined convergence condition is satisfied. GSM requires the matrix `A` to be strictly diagonally dominant or symmetric positive. 
+GSM is used to solve linear systems of equations in the form `Ax=b` one equation at a time. During each iteration, the new values are calculated from the old values. An initial guess is initialized to serve as the "old" values for the first run through. This process continues continues until a predefined convergence condition is satisfied. GSM convergence requires the matrix `A` to be strictly diagonally dominant, or symmetric and positive definite. 
   
-###<a name="2.2"></a>2.2 Finite difference method
+###<a name="2.2"></a>2.2 Finite-difference method
+We coded up the governing partial differntial equations (PDEs) using the finite-difference method (FDM). FDM uses the values of a point and it's neighbors to approximate derivatives at that point. Combinations of forward, backward, and central finite difference equations are used to discretize our PDEs and boundary conditions.
+
+###<a name="2.3"></a>2.3 General pseudocode 
+Here, we present a high-level overview of how our code works. 
+  
+```
+Initialize the displacement functions R and W to be M+1xN+1 arrays.
+Make the initial guess R=0, W=0.
+While the system has not converged to solution:
+	Solve for R and W at each point [i][j] such that `0<=i<=M` and `0<=j<=N`.
+```
 
