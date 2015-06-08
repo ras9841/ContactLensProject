@@ -18,6 +18,16 @@
 
 
 //
+// Macros
+//
+
+#define NUM_ITER 2500
+#define r(i,j) (j*dr)
+#define dr (R_EDGE/N)
+#define dz (DEPTH/M)
+
+
+//
 // Globals
 //
 
@@ -26,19 +36,9 @@ const int N = 5;
 const double E = std::pow(10,6);		// dynes/cm^2,	Young's modulus of eye	
 const double SIGMA = .4;			//     		Poisson's ration of CL
 const double R_EDGE = .7;			// cm, 		radius of undeformed CL
-const double DEPTH = .7;
+const double DEPTH = .7;			// cm,		depth of eye
 const double H = 3 * std::pow(10,-4);		// cm, 		PLTF thickness
 const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
-
-
-//
-// Macros
-//
-
-#define NUM_ITER 15
-#define r(i,j) (j*dr)
-#define dr (R_EDGE/N)
-#define dz (DEPTH/M)
 
 
 //
@@ -55,6 +55,7 @@ void print_disp(double function[][N+1]);
 // Postconditions:
 // 	pressure at the point (i,j) calculated and returned.
 double P(int i, int j){
+	//return 0;
 	return std::pow(r(i,j),2) - std::pow(R_EDGE,2);
 	//return ((E*std::pow(TAU,3)*56*H)/(12*(1-SIGMA*SIGMA)*std::pow(R_EDGE,4)));
 }
@@ -118,12 +119,10 @@ int main(){
 		
 		// i = 0 (lower bound w/o corners)
 		for (int j = 1; j < N; j++){
-			R[0][j] = r(0,j) * (
-				  (W[0][j]-W[1][j])/dz
-				- (1-SIGMA)*(R[0][j+1]-R[0][j-1])///(2*dr*SIGMA)
-				);
-			W[0][j] = W[1][j] + (SIGMA*dz / (1 - SIGMA)) *((R[0][j+1] - R[0][j-1]) 
-				/ (2*dr) + R[0][j] / r(0, j));
+			R[0][j] = R[1][j]+dz/(2*dr)*(W[0][j+1]-W[0][j-1]);
+			W[0][j] = 0;
+				/// W[1][j] + (SIGMA*dz / (1 - SIGMA)) *((R[0][j+1] - R[0][j-1]) 
+				// / (2*dr) + R[0][j] / r(0, j));
 		}
 
 		// i = M (top bound w/o corners)
@@ -133,7 +132,7 @@ int main(){
 			 	/ ((1 - SIGMA)*E) - (dz*SIGMA / (1 - SIGMA))*((R[M][j+1] - R[M][j-1]) 
 				/ (2 * dr)+R[M][j]/r(M,j));
 		}
-
+		
 		// j = 0 (left bound w/o corners)
 		for (int i = 1; i < M; i++){
 			R[i][0] = 0;
@@ -184,6 +183,7 @@ int main(){
 	print_disp(R);
 	printf("W:\n");
 	print_disp(W);
+	//std::cout << 1/(2*dr*SIGMA) << "\n";
 	return 0;
 }
 
