@@ -63,14 +63,14 @@ GSM is used to solve linear systems of equations in the form `Ax=b` one equation
 We coded up the governing partial differntial equations (PDEs) using the finite-difference method (FDM). FDM uses the values of a point and it's neighbors to approximate derivatives at that point. Combinations of forward, backward, and central finite difference equations are used to discretize our PDEs and boundary conditions.
   
 ###<a name="2.3"></a>2.3 Computational grid 
-We reprensent the eye as a radially symmetric. Consequently, we only need solve from the center of the eye to an edge to solve the system. The eye is mapped to an `MxN` grid. The variable `i` is used to represent rows and height, such that `0<=i<=M`, and `j` to represent columns and width, such that `0<=j<=N`. As a whole, the grid can be viewed as follows:
+We reprensent the eye as a radially-symmetric cylinder. Consequently, we only need solve from the center of the eye to an edge to solve the system. The eye is mapped to an `MxN` grid. The variable `i` is used to represent rows and height, such that `0<=i<=M`, and `j` to represent columns and width, such that `0<=j<=N`. As a whole, the grid can be viewed as follows:
 ```
 [M][0]  |---------------| [M][N]
- ^     	|---------------|
- i	|---------------|
- v  	|---------------|
-[0][0]	|---------------| [0][N]
-	<------	j -----	>
+ ^      |---------------|
+ i      |---------------|
+ v      |---------------|
+[0][0]  |---------------| [0][N]
+        <------ j ------>
 ```
 Note: `[][]` are used to denote array indexing in C. 
 ###<a name="2.4"></a>2.4 General pseudocode 
