@@ -7,7 +7,9 @@ Maintained by Roland Sanford (<ras9841@rit.edu>).
 1. [Setup](#1)
   1. [Development Conditions](#1.1)
   2. [Compiling and Running](#1.2)
-
+2. [Implementation](#2)
+  1. [Gauss-Seidel method](#2.1)
+  2. [Finite difference method](#2.2)
 ##<a name="1"></a>1. Setup [[top](#clp)]
 ###<a name="1.1"></a>1.1 Development Conditions
 The code for `c_eye.cpp` was written in C++ using the gcc (GCC) 4.9.2 (Red Hat 4.9.2-6) GNU compiler.
@@ -33,7 +35,7 @@ $ ./clp
 ```
 
 ###Mac
-Open a terminal and navigate to the main project directory. This rquires XCode. Type 
+Open a terminal and navigate to the main project directory. This requires XCode. Type 
 ```{r, engine='bash'}
 $ clang++ -std=c++11 -stdlib=libc++ c_eye.cpp
 $ ./a.out
@@ -47,4 +49,9 @@ This requires `Visual C++ .NET`. Run Visual C++ 2010 Express Command Prompt. Typ
 > c_eye.exe
 ```
 to compile then run the program.
+
+##<a name="2"></a>2. Implementation [[top](#clp)]
+###<a name="2.1"></a>2.1 Gauss-Seidel method
+The general technique we used to solve our cylindrical eye problem was the Gauss-Seidel method. Here, we will provide a brief introduction to the method. 
+###<a name="2.2"></a>2.2 Finite difference method
 
