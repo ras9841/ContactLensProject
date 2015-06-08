@@ -57,7 +57,7 @@ to compile then run the program.
 ###<a name="2.1"></a>2.1 Gauss-Seidel method
 We the Gauss-Seidel method (GSM) is our general technique for solving the cylindrical eye problem. In this section, we will provide a brief introduction to the method.  
   
-GSM is used to solve linear systems of equations in the form `Ax=b` one equation at a time. During each iteration, the new values are calculated from the old values. An initial guess is initialized to serve as the "old" values for the first run through. This process continues continues until a predefined convergence condition is satisfied. GSM convergence requires the matrix `A` to be strictly diagonally dominant, or symmetric and positive definite. 
+GSM is used to solve linear systems of equations in the form `Ax=b` one equation at a time. During each iteration, the new values are calculated from the old values. An initial gues serves as the "old" values for the first run through. This process continues continues until a predefined convergence condition is satisfied. GSM convergence requires the matrix `A` to be strictly diagonally dominant, or symmetric and positive definite. 
     
 ###<a name="2.2"></a>2.2 Finite-difference method
 We coded up the governing partial differntial equations (PDEs) using the finite-difference method (FDM). FDM uses the values of a point and it's neighbors to approximate derivatives at that point. Combinations of forward, backward, and central finite difference equations are used to discretize our PDEs and boundary conditions.
@@ -72,7 +72,8 @@ We reprensent the eye as a radially-symmetric cylinder. Consequently, we only ne
 [0][0]  |---------------| [0][N]
         <------ j ------>
 ```
-Note: `[][]` are used to denote array indexing in C. 
+Note: `[]` denotes array indexing in C. 
+  
 ###<a name="2.4"></a>2.4 General pseudocode 
 Here, we present a high-level overview of how our code works. 
   
