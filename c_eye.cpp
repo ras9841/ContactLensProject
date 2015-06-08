@@ -35,7 +35,7 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 // Macros
 //
 
-#define NUM_ITER 1
+#define NUM_ITER 15
 #define r(i,j) (j*dr)
 #define dr (R_EDGE/N)
 #define dz (DEPTH/M)
@@ -55,7 +55,7 @@ void print_disp(double function[][N+1]);
 // Postconditions:
 // 	pressure at the point (i,j) calculated and returned.
 double P(int i, int j){
-	return 0; //.49-r(i,j)*r(i,j);
+	return std::pow(r(i,j),2) - std::pow(R_EDGE,2);
 	//return ((E*std::pow(TAU,3)*56*H)/(12*(1-SIGMA*SIGMA)*std::pow(R_EDGE,4)));
 }
 
@@ -118,8 +118,10 @@ int main(){
 		
 		// i = 0 (lower bound w/o corners)
 		for (int j = 1; j < N; j++){
-			R[0][j] = r(0, j)*(1 - SIGMA) / SIGMA*(R[0][j-1] - R[0][j+1]) 
-				/ (2*dr) - r(0, j)*(W[1][j] - W[0][j]) / dz;
+			R[0][j] = r(0,j) * (
+				  (W[0][j]-W[1][j])/dz
+				- (1-SIGMA)*(R[0][j+1]-R[0][j-1])///(2*dr*SIGMA)
+				);
 			W[0][j] = W[1][j] + (SIGMA*dz / (1 - SIGMA)) *((R[0][j+1] - R[0][j-1]) 
 				/ (2*dr) + R[0][j] / r(0, j));
 		}
