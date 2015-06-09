@@ -30,8 +30,8 @@
 // Globals
 //
 
-const int M = 5;
-const int N = 5;
+const int M = 20;
+const int N = 20;
 const double E = std::pow(10,6);		// dynes/cm^2,	Young's modulus of eye	
 const double SIGMA = .4;			//     		Poisson's ration of CL
 const double R_EDGE = .7;			// cm, 		radius of undeformed CL
@@ -63,7 +63,7 @@ int main(){
 	double R[M+1][N+1];
 	double W[M+1][N+1];
 	
-	std::cout << "Initial Guess: \n";
+	//std::cout << "Initial Guess: \n";
 
 	// Initialize R and W
 	for (size_t i = 0; i < M + 1; i++){
@@ -72,7 +72,7 @@ int main(){
 			W[i][j] = 0.00;
 		}
 	}
-	
+	/*	
 	printf("R:\n");
 	print_disp(R);	
 	
@@ -82,12 +82,12 @@ int main(){
 	printf("-----> Final Solution after (%d) iterations\n", NUM_ITER);
 
 	std::cout << "\n";
-	
+	*/
 	int count = 0;
 	while (count < NUM_ITER){
 		// (0,0) (lower left corner)
 		R[0][0] = 0;
-		W[0][0] = W[1][0];
+		W[0][0] = 0;
 
 		// (0,M) (top left corner)
 		R[M][0] = 0;
@@ -153,7 +153,8 @@ int main(){
 		for (int i = 1; i < M; i++){
 			for (int j = 1; j < N; j++){
 				R[i][j] = (
-					  ( 2*(1-SIGMA)/(dr*dr) + 2*(1-SIGMA)/(2*dr*r(i,j)) )*(R[i][j+1]-R[i][j-1])  
+					  2*(1-SIGMA)/(dr*dr)*(R[i][j+1]+R[i][j-1])
+					+ 2*(1-SIGMA)/(2*dr*r(i,j))*(R[i][j+1]-R[i][j-1])  
 					+ (1-2*SIGMA)*(R[i+1][j]+R[i-1][j])/( dz*dz )
 					+ (W[i+1][j+1]-W[i+1][j-1]-W[i-1][j+1]+W[i-1][j-1])/( 4*dr*dz )
 					) / 
@@ -178,10 +179,10 @@ int main(){
 
 		count++;
 	}	
-	printf("R:\n");
+	//printf("R:\n");
 	print_disp(R);
-	printf("W:\n");
-	print_disp(W);
+	//printf("W:\n");
+	//print_disp(W);
 	//std::cout << 1/(2*dr*SIGMA) << "\n";
 	return 0;
 }
