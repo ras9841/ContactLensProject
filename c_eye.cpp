@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <cmath>
 #include <math.h>
+#include <cstdlib>
+
 
 //
 // Macros
@@ -25,6 +27,7 @@
 #define dr (R_EDGE/N)
 #define dz (DEPTH/M)
 #define PI 3.14159265
+
 
 //
 // Globals
@@ -180,10 +183,13 @@ int main(){
 		count++;
 	}	
 	//printf("R:\n");
-	print_disp(R);
+	//print_disp(R);
 	//printf("W:\n");
 	//print_disp(W);
 	//std::cout << 1/(2*dr*SIGMA) << "\n";
+	#ifdef OCTAVE
+	std::system("octave display.m");
+	#endif
 	return 0;
 }
 
