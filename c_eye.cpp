@@ -15,16 +15,16 @@
 #include <iostream>
 #include <stdio.h>
 #include <cmath>
-
+#include <math.h>
 
 //
 // Macros
 //
 
-#define NUM_ITER 2500
+#define NUM_ITER 5000
 #define dr (R_EDGE/N)
 #define dz (DEPTH/M)
-
+#define PI 3.14159265
 
 //
 // Globals
@@ -45,24 +45,8 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 //
 
 void print_disp(double function[][N+1]);
-
-double r(int i, int j){
-	return j * dr;
-}
-
-
-// Pressure function. Used to calculate the pressure due the a contact lens
-// on the top boundary.
-//
-// Preconditions:
-// 	none
-// Postconditions:
-// 	pressure at the point (i,j) calculated and returned.
-double P(int i, int j){
-	//return 0;
-	return std::pow(r(i,j),2) - std::pow(R_EDGE,2);
-	//return ((E*std::pow(TAU,3)*56*H)/(12*(1-SIGMA*SIGMA)*std::pow(R_EDGE,4)));
-}
+double r(int i, int j);
+double P(int i, int j);
 
 // Main functino in the cylindrical solution.
 // Populates R and W with zeros as an initial
@@ -231,6 +215,33 @@ void print_disp(double function[][N+1]){
 		std::cout << "\n";
 	}
 	std::cout << "\n\n";
+}
+
+// Radial function. Used to calculate the distance in cm from the center
+// of the eye (r=0).
+//
+// Preconditions:
+// 	none
+// Postconditions:
+// 	radial distance from the point (i,j) to the center 
+// 	calculated and returned
+double r(int i, int j){
+	return j * dr;
+}
+
+
+// Pressure function. Used to calculate the pressure due the a contact lens
+// on the top boundary.
+//
+// Preconditions:
+// 	none
+// Postconditions:
+// 	pressure at the point (i,j) calculated and returned.
+double P(int i, int j){
+	//return 0;
+	return std::pow(r(i,j),2) - std::pow(R_EDGE,2);
+	//return sin(2*PI*r(i,j)/R_EDGE); 
+	//return ((E*std::pow(TAU,3)*56*H)/(12*(1-SIGMA*SIGMA)*std::pow(R_EDGE,4)));
 }
 
 
