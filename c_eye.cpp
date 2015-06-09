@@ -103,22 +103,23 @@ int main(){
 	while (count < NUM_ITER){
 		// (0,0) (lower left corner)
 		R[0][0] = 0;
-		W[0][0] = W[1][0]+2*SIGMA*dz/((1-SIGMA)*dr)*R[0][1];
+		W[0][0] = W[1][0];
 
 		// (0,M) (top left corner)
 		R[M][0] = 0;
-		W[M][0] = W[M-1][0] - (dz/(1-SIGMA))
-			* ( 2*SIGMA/dr*R[M][1] +(1+SIGMA)*(1-2*SIGMA)*P(M,0)/E ); 
+		W[M][0] = W[M-1][0] - dz*(1+SIGMA)*(1-2*SIGMA)*P(M,0)/( (1-SIGMA)*E ); 
 
 		// (N,0) (lower right corner) 
-		R[0][N] = R[1][N] - (dz/dr)*W[0][N-1];
+		R[0][N] = 
+			(
+			(1-SIGMA)*R[0][N-1]/dr - SIGMA*(W[1][N]-W[0][N])/dz
+			)
+			/( (1-SIGMA)/dr + SIGMA/r(0,N) );
 		W[0][N] = 0;
 
 		// (N,M) (top right corner)
-		R[M][N] = ( SIGMA*R[M][N-1]/dr - (1-SIGMA)*(W[M][N]- W[M-1][N])/dz  
-			- (1+SIGMA)*(1-2*SIGMA)*P(M,N)/E )
-			/ (SIGMA*(1/dr+1/r(M,N)));  
-		W[M][N] = W[M][N-1] - (dr/dz)*(R[M][N]-R[M-1][N]);
+		R[M][N] = R[M-1][N] - dz*(W[M][N]-W[M][N-1])/dr; 
+		W[M][N] = W[M][N-1] - dz*SIGMA*(R[M][N]-R[M-1][N])/(dr*(1-SIGMA));
 
 		
 		// i = 0 (lower bound w/o corners)
@@ -155,9 +156,12 @@ int main(){
 
 		// j = N (right boundary w/o corners)
 		for (int i = 1; i < M; i++){
-			R[i][N] =  
-				( (1-SIGMA)*R[i][N-1]/dr  - (SIGMA)/(2*dz)*(W[i+1][N] - W[i-1][N]))
-			 	/ ((1-SIGMA)/dr + SIGMA/r(i,N));
+			R[i][N] = 
+				( 
+				(1-SIGMA)*R[i][N-1]/dr  
+				- (SIGMA)/(2*dz)*( W[i+1][N] - W[i-1][N] )
+				)
+			 	/ ( (1-SIGMA)/dr + SIGMA/r(i,N) );
 			W[i][N] = W[i][N-1] - (dr/(2*dz))*(R[i+1][N]- R[i-1][N]);
 		}
 		
@@ -165,8 +169,7 @@ int main(){
 		for (int i = 1; i < M; i++){
 			for (int j = 1; j < N; j++){
 				R[i][j] = (
-					  2*(1-SIGMA)*(R[i][j+1]+R[i][j-1])/( dr*dr  ) 
-					+ (1-SIGMA)*(R[i][j+1]-R[i][j-1])/( r(i,j)*dr  )
+					  ( 2*(1-SIGMA)/(dr*dr) + 2*(1-SIGMA)/(2*dr*r(i,j)) )*(R[i][j+1]-R[i][j-1])  
 					+ (1-2*SIGMA)*(R[i+1][j]+R[i-1][j])/( dz*dz )
 					+ (W[i+1][j+1]-W[i+1][j-1]-W[i-1][j+1]+W[i-1][j-1])/( 4*dr*dz )
 					) / 
@@ -177,13 +180,15 @@ int main(){
 					);
 				W[i][j] = 
 					(
-					(W[i][j+1]+W[i][j-1])*(1/(dr*dr)+ 1/(r(i,j)*2*dr))
+					  (W[i][j+1]+W[i][j-1])/(dr*dr)
+					+ (W[i][j+1]-W[i][j-1])/(2*dr*r(i,j))
 					+ 2*(1-SIGMA)/(dz*dz*(1-2*SIGMA))*(W[i+1][j]+W[i-1][j])
-					+ ( (R[i+1][j]-R[i-1][j])/(2*dz*r(i,j)) + 
-					  (R[i+1][j+1]-R[i+1][j-1]-R[i-1][j+1]+R[i-1][j-1])/(4*dr*dz) )
-						/(1-2*SIGMA) 
+					+ ( 
+					    (R[i+1][j]-R[i-1][j])/(2*dz*r(i,j)) 
+					  + (R[i+1][j+1]-R[i+1][j-1]-R[i-1][j+1]+R[i-1][j-1])/(4*dr*dz) 
+					  ) / (1-2*SIGMA) 
 					)
-					/ (2/(dr*dr)+4*(1-SIGMA)/(dz*dz*(1-2*SIGMA)));
+					/ ( 2/(dr*dr)+4*(1-SIGMA)/(dz*dz*(1-2*SIGMA)) );
 			}
 		}
 
