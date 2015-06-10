@@ -34,8 +34,8 @@
 // Globals
 //
 
-const int M = 5;
-const int N = 5;
+const int M = 20;
+const int N = 20;
 const double E = std::pow(10,6);		// dynes/cm^2,	Young's modulus of eye	
 const double SIGMA = .4;			//     		Poisson's ration of CL
 const double R_EDGE = .7;			// cm, 		radius of undeformed CL
@@ -125,12 +125,12 @@ int main(){
 		// j = 0 (left bound w/o corners)
 		for (int i = 1; i < M; i++){
 			R[i][0] = 0;
-			W[i][0] =  
-				( 
-				2/(dr*dr)*W[i][1]  
-				+ ( (1-SIGMA)/(dz*dz*(1-2*SIGMA)) )*(W[i+1][0]+W[i-1][0]) 
-				) 
-				/ ( 2/(dr*dr)+2*(1-SIGMA)/(dz*dz*(1-2*SIGMA)) );
+			W[i][0] = W[i][1]; 
+				//( 
+				//2/(dr*dr)*W[i][1]  
+				//+ ( (1-SIGMA)/(dz*dz*(1-2*SIGMA)) )*(W[i+1][0]+W[i-1][0]) 
+				//) 
+				/// ( 2/(dr*dr)+2*(1-SIGMA)/(dz*dz*(1-2*SIGMA)) );
 		}
 
 
@@ -177,13 +177,13 @@ int main(){
 	}	
 	
 	duration = (std::clock() - start)/(double)CLOCKS_PER_SEC;
-    	std::cout<<"Time:  "<< duration << "s. " <<'\n';
+    	//std::cout<<"Time:  "<< duration << "s. " <<'\n';
 	
-	printf("R:\n");
-	print_disp(R);
+	//printf("R:\n");
+	//print_disp(W);
 	
-	printf("W:\n");
-	print_disp(W);
+	//printf("W:\n");
+	//print_disp(W);
 
 	#ifdef OCTAVE
 	std::system("octave display.m");
@@ -244,8 +244,8 @@ double r(int i, int j){
 // 	pressure at the point (i,j) calculated and returned.
 double P(int i, int j){
 	//return 0;
-	return std::pow(r(i,j),2) - std::pow(R_EDGE,2);
-	//return sin(2*PI*r(i,j)/R_EDGE); 
+	//return std::pow(r(i,j),2) - std::pow(R_EDGE,2);
+	return sin(2*PI*r(i,j)/R_EDGE); 
 	//return ((E*std::pow(TAU,3)*56*H)/(12*(1-SIGMA*SIGMA)*std::pow(R_EDGE,4)));
 }
 
