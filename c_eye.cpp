@@ -17,6 +17,7 @@
 #include <cmath>
 #include <math.h>
 #include <cstdlib>
+#include <ctime>
 
 
 //
@@ -33,8 +34,8 @@
 // Globals
 //
 
-const int M = 20;
-const int N = 20;
+const int M = 5;
+const int N = 5;
 const double E = std::pow(10,6);		// dynes/cm^2,	Young's modulus of eye	
 const double SIGMA = .4;			//     		Poisson's ration of CL
 const double R_EDGE = .7;			// cm, 		radius of undeformed CL
@@ -66,26 +67,18 @@ int main(){
 	double R[M+1][N+1];
 	double W[M+1][N+1];
 	
-	//std::cout << "Initial Guess: \n";
-
-	// Initialize R and W
 	for (size_t i = 0; i < M + 1; i++){
 		for (size_t j = 0; j < N+1; j++){
 			R[i][j] = 0.00;
 			W[i][j] = 0.00;
 		}
 	}
-	/*	
-	printf("R:\n");
-	print_disp(R);	
 	
-	printf("W:\n");
-	print_disp(W);	
+	// Setup timer
+	std::clock_t start;
+	double duration;
+	start = std::clock();
 	
-	printf("-----> Final Solution after (%d) iterations\n", NUM_ITER);
-
-	std::cout << "\n";
-	*/
 	int count = 0;
 	while (count < NUM_ITER){
 		// (0,0) (lower left corner)
@@ -94,7 +87,7 @@ int main(){
 
 		// (0,M) (top left corner)
 		R[M][0] = 0;
-		W[M][0] = W[M-1][0] - dz*(1+SIGMA)*(1-2*SIGMA)*P(M,0)/( (1-SIGMA)*E ); 
+		W[M][0] = W[M][1];//W[M-1][0] - dz*(1+SIGMA)*(1-2*SIGMA)*P(M,0)/( (1-SIGMA)*E ); 
 
 		// (N,0) (lower right corner) 
 		R[0][N] = 
@@ -182,11 +175,16 @@ int main(){
 
 		count++;
 	}	
-	//printf("R:\n");
-	//print_disp(R);
-	//printf("W:\n");
-	//print_disp(W);
-	//std::cout << 1/(2*dr*SIGMA) << "\n";
+	
+	duration = (std::clock() - start)/(double)CLOCKS_PER_SEC;
+    	std::cout<<"Time:  "<< duration << "s. " <<'\n';
+	
+	printf("R:\n");
+	print_disp(R);
+	
+	printf("W:\n");
+	print_disp(W);
+
 	#ifdef OCTAVE
 	std::system("octave display.m");
 	#endif
