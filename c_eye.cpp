@@ -18,7 +18,8 @@
 #include <math.h>
 #include <cstdlib>
 #include <ctime>
-
+#include <iostream>
+#include <fstream>
 
 //
 // Macros
@@ -34,8 +35,8 @@
 // Globals
 //
 
-const int M = 20;
-const int N = 20;
+const int M = 100;
+const int N = 100;
 const double E = std::pow(10,6);		// dynes/cm^2,	Young's modulus of eye	
 const double SIGMA = .4;			//     		Poisson's ration of CL
 const double R_EDGE = .7;			// cm, 		radius of undeformed CL
@@ -49,6 +50,7 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 //
 
 void print_disp(double function[][N+1]);
+void write_csv(double function[][N+1], char ch);
 double r(int i, int j);
 double P(int i, int j);
 
@@ -177,7 +179,7 @@ int main(){
 	}	
 	
 	duration = (std::clock() - start)/(double)CLOCKS_PER_SEC;
-    	//std::cout<<"Time:  "<< duration << "s. " <<'\n';
+    	std::cout<<"Time:  "<< duration << "s. " <<'\n';
 	
 	//printf("R:\n");
 	//print_disp(W);
@@ -186,6 +188,8 @@ int main(){
 	//print_disp(W);
 
 	#ifdef OCTAVE
+	write_csv(R, 'R');
+	write_csv(W, 'W');
 	std::system("octave display.m");
 	#endif
 	return 0;
@@ -220,6 +224,38 @@ void print_disp(double function[][N+1]){
 		std::cout << "\n";
 	}
 	std::cout << "\n\n";
+}
+
+// write_csv() writes the specified function in the same manner that
+// print_disp() prints.
+//
+// Preconditions:
+// 	function is not null.
+// Postconditions:
+// 	all files are closed.
+void write_csv(double function[][N+1], char ch){
+	char name[6];
+	name[0] = ch;
+	name[1] = '.';
+	name[2] = 'c';
+	name[3] = 's';
+	name[4] = 'v';
+	name[5] = '\0';
+	
+	std::ofstream file;
+	file.open(name);
+	for (size_t i = M; i < -1; i--){
+		for (size_t j = 0; j < N+1; j++){
+			if (std::abs(function[i][j]) == 0){// 1*std::pow(10,-15)){
+				file << "0.00000e+01,\t";
+			}
+			else{
+				file << function[i][j] << ",\t";
+			}
+		}
+		file << "\n";
+	}
+	file.close();
 }
 
 // Radial function. Used to calculate the distance in cm from the center
