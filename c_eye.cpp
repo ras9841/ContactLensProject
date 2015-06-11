@@ -21,6 +21,7 @@
 #include <iostream>
 #include <fstream>
 
+
 //
 // Macros
 //
@@ -49,8 +50,8 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 // Functions
 //
 
-void print_disp(double function[][N+1]);
-void write_csv(double function[][N+1], char ch);
+void print_disp(double **function);
+void write_csv(double **function, char ch);
 double r(int i, int j);
 double P(int i, int j);
 
@@ -66,10 +67,12 @@ double P(int i, int j);
 int main(){
 
 	// Populate R and W
-	double R[M+1][N+1];
-	double W[M+1][N+1];
+	double **R = new double*[M+1];
+	double **W = new double*[M+1];
 	
 	for (size_t i = 0; i < M + 1; i++){
+		R[i] = new double[N+1];
+		W[i] = new double[N+1];
 		for (size_t j = 0; j < N+1; j++){
 			R[i][j] = 0.00;
 			W[i][j] = 0.00;
@@ -85,11 +88,11 @@ int main(){
 	while (count < NUM_ITER){
 		// (0,0) (lower left corner)
 		R[0][0] = 0;
-		W[0][0] = 0;
+		W[0][0] = W[0][1];
 
 		// (0,M) (top left corner)
 		R[M][0] = 0;
-		W[M][0] = W[M][1];//W[M-1][0] - dz*(1+SIGMA)*(1-2*SIGMA)*P(M,0)/( (1-SIGMA)*E ); 
+		W[M][0] = W[M][1]; 
 
 		// (N,0) (lower right corner) 
 		R[0][N] = 
@@ -107,9 +110,8 @@ int main(){
 		// i = 0 (lower bound w/o corners)
 		for (int j = 1; j < N; j++){
 			R[0][j] = R[1][j] + dz/(2*dr)*( W[0][j+1]-W[0][j-1] );
-			W[0][j] = 0;
-				/// W[1][j] + (SIGMA*dz / (1 - SIGMA)) *((R[0][j+1] - R[0][j-1]) 
-				// / (2*dr) + R[0][j] / r(0, j));
+			W[0][j] = W[1][j] + (SIGMA*dz / (1 - SIGMA)) *((R[0][j+1] - R[0][j-1]) 
+				 / (2*dr) + R[0][j] / r(0, j));
 		}
 
 		// i = M (top bound w/o corners)
@@ -128,11 +130,6 @@ int main(){
 		for (int i = 1; i < M; i++){
 			R[i][0] = 0;
 			W[i][0] = W[i][1]; 
-				//( 
-				//2/(dr*dr)*W[i][1]  
-				//+ ( (1-SIGMA)/(dz*dz*(1-2*SIGMA)) )*(W[i+1][0]+W[i-1][0]) 
-				//) 
-				/// ( 2/(dr*dr)+2*(1-SIGMA)/(dz*dz*(1-2*SIGMA)) );
 		}
 
 
@@ -192,6 +189,15 @@ int main(){
 	write_csv(W, 'W');
 	std::system("octave display.m");
 	#endif
+	
+	for (size_t i = 0; i < M + 1; i++){
+		delete [] R[i];
+		delete [] W[i];
+	}	
+	
+	delete [] R;
+	delete [] W;	
+
 	return 0;
 }
 
@@ -211,7 +217,7 @@ int main(){
 // 		been initialized.
 // Postconditions:
 // 	function printed.
-void print_disp(double function[][N+1]){
+void print_disp(double **function){
 	for (size_t i = M; i < -1; i--){
 		for (size_t j = 0; j < N+1; j++){
 			if (std::abs(function[i][j]) == 0){// 1*std::pow(10,-15)){
@@ -233,7 +239,7 @@ void print_disp(double function[][N+1]){
 // 	function is not null.
 // Postconditions:
 // 	all files are closed.
-void write_csv(double function[][N+1], char ch){
+void write_csv(double **function, char ch){
 	char name[6];
 	name[0] = ch;
 	name[1] = '.';
@@ -280,8 +286,8 @@ double r(int i, int j){
 // 	pressure at the point (i,j) calculated and returned.
 double P(int i, int j){
 	//return 0;
-	//return std::pow(r(i,j),2) - std::pow(R_EDGE,2);
-	return sin(2*PI*r(i,j)/R_EDGE); 
+	return std::pow(r(i,j),2) - std::pow(R_EDGE,2);
+	//return sin(2*PI*r(i,j)/R_EDGE); 
 	//return ((E*std::pow(TAU,3)*56*H)/(12*(1-SIGMA*SIGMA)*std::pow(R_EDGE,4)));
 }
 
