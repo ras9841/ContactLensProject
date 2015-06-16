@@ -15,18 +15,17 @@
 #include <iostream>
 #include <stdio.h>
 #include <cmath>
-#include <math.h>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
 #include <fstream>
 
-
 //
 // Macros
 //
 
-#define NUM_ITER 5000
+#define NUM_ITER 100000
+#define TOLERANCE std::pow(10,-15)
 #define dr (R_EDGE/N)
 #define dz (DEPTH/M)
 #define PI 3.14159265
@@ -36,12 +35,12 @@
 // Globals
 //
 
-const int M = 100;
-const int N = 100;
+const int M = 500;
+const int N = 500;
 const double E = std::pow(10,6);		// dynes/cm^2,	Young's modulus of eye	
 const double SIGMA = .4;			//     		Poisson's ration of CL
-const double R_EDGE = .7;			// cm, 		radius of undeformed CL
-const double DEPTH = .7;			// cm,		depth of eye
+const double R_EDGE = 1;			// cm, 		radius of undeformed CL
+const double DEPTH =  1;			// cm,		depth of eye
 const double H = 3 * std::pow(10,-4);		// cm, 		PLTF thickness
 const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 
@@ -69,7 +68,7 @@ int main(){
 	// Populate R and W
 	double **R = new double*[M+1];
 	double **W = new double*[M+1];
-	
+       
 	for (size_t i = 0; i < M + 1; i++){
 		R[i] = new double[N+1];
 		W[i] = new double[N+1];
@@ -84,70 +83,115 @@ int main(){
 	double duration;
 	start = std::clock();
 	
-	int count = 0;
-	while (count < NUM_ITER){
-		// (0,0) (lower left corner)
-		R[0][0] = 0;
+    double curr_diff = 100.0, max_diff, old, diff;
+	size_t count = 0;
+	while (curr_diff > std::pow(10,-11)){
+		max_diff = 0;
+        // (0,0) (lower left corner
+        R[0][0] = 0;
+        old = W[0][0];
 		W[0][0] = W[0][1];
+        if ( (diff = std::abs(old-W[0][0])) > max_diff ){ 
+            max_diff = diff;
+        }
 
 		// (0,M) (top left corner)
 		R[M][0] = 0;
-		W[M][0] = W[M][1]; 
-
-		// (N,0) (lower right corner) 
-		R[0][N] = 
-			(
-			(1-SIGMA)*R[0][N-1]/dr - SIGMA*(W[1][N]-W[0][N])/dz
-			)
-			/( (1-SIGMA)/dr + SIGMA/r(0,N) );
+		old = W[M][0];
+        W[M][0] = W[M][1]; 
+        if ( (diff = std::abs(old-W[M][0])) > max_diff ){
+            max_diff = diff;
+        }
+		
+        // (N,0) (lower right corner) 
+		R[0][N] = 0; 
 		W[0][N] = 0;
 
 		// (N,M) (top right corner)
-		R[M][N] = R[M-1][N] - dz*(W[M][N]-W[M][N-1])/dr; 
-		W[M][N] = W[M][N-1] - dz*SIGMA*(R[M][N]-R[M-1][N])/(dr*(1-SIGMA));
-
-		
+        old = R[M][N];
+        R[M][N] = 4*R[M-1][N]/3 - R[M-2][N]/3 
+                - dz*(3*W[M][N]-4*W[M][N-1]+W[M][N-2])/(3*dr); 
+		if ( (diff = std::abs(old-R[M][N])) > max_diff ){
+            max_diff = diff;
+        }
+        
+        old = W[M][N];
+        W[M][N] = 4*W[M-1][N]/3 - W[M-2][N]/3 
+                - ( 2*dz*SIGMA/( 3*(1-SIGMA) ) )*(
+                (3*R[M][N]-4*R[M][N-1]+R[M][N-2])/(2*dr)+R[M][N]/r(M,N))
+                - 2*dz*P(M,N)*(1+SIGMA)*(1-2*SIGMA)/(3*(1-SIGMA)*E);
+       	if ( (diff = std::abs(old-W[M][N])) > max_diff ){
+            max_diff = diff;
+        }
+        
+ 
 		// i = 0 (lower bound w/o corners)
 		for (int j = 1; j < N; j++){
-			R[0][j] = R[1][j] + dz/(2*dr)*( W[0][j+1]-W[0][j-1] );
-			W[0][j] = W[1][j] + (SIGMA*dz / (1 - SIGMA)) *((R[0][j+1] - R[0][j-1]) 
-				 / (2*dr) + R[0][j] / r(0, j));
-		}
+			R[0][j] = 0;
+			W[0][j] = 0;		
+        }
 
 		// i = M (top bound w/o corners)
 		for (int j = 1; j < N; j++){
+            old = R[M][j];
 			R[M][j] = R[M-1][j] - dz *(W[M][j+1] - W[M][j-1]) / (2 * dr);
-			W[M][j] = W[M-1][j] 
+			if ( (diff = std::abs(old-R[M][j])) > max_diff ){
+                 max_diff = diff;
+            }
+
+            old = W[M][j];
+            W[M][j] = W[M-1][j] 
 				- dz*(1 + SIGMA)*(1 - 2*SIGMA)*P(M, j)/((1 - SIGMA)*E) 
 				- ( dz*SIGMA / (1 - SIGMA) )*
 				(
 					(R[M][j+1] - R[M][j-1])/(2*dr)
 					+ R[M][j]/r(M,j) 
 				);
+	        if ( (diff = std::abs(old-W[M][j])) > max_diff ){
+                 max_diff = diff;
+            }
+
 		}
 		
 		// j = 0 (left bound w/o corners)
 		for (int i = 1; i < M; i++){
 			R[i][0] = 0;
-			W[i][0] = W[i][1]; 
-		}
+			
+            old = W[i][0];
+            W[i][0] = W[i][1]; 
+		    if ( (diff = std::abs(old-W[i][0])) > max_diff ){
+                 max_diff = diff;
+            }
+
+        }
 
 
 		// j = N (right boundary w/o corners)
 		for (int i = 1; i < M; i++){
-			R[i][N] = 
+			old = R[i][N];
+            R[i][N] = 
 				( 
-				(1-SIGMA)*R[i][N-1]/dr  
+				(1-SIGMA)*(4*R[i][N-1]-R[i][N-2])/(2*dr)  
 				- (SIGMA)/(2*dz)*( W[i+1][N] - W[i-1][N] )
 				)
-			 	/ ( (1-SIGMA)/dr + SIGMA/r(i,N) );
-			W[i][N] = W[i][N-1] - (dr/(2*dz))*(R[i+1][N]- R[i-1][N]);
-		}
+			 	/ ( 3*(1-SIGMA)/(2*dr) + SIGMA/r(i,N) );
+			if ( (diff = std::abs(old-R[i][N])) > max_diff ){
+                 max_diff = diff;
+            }
+            
+            old = W[i][N];
+            W[i][N] = 4*W[i][N-1]/3 - W[i][N-2]/3 - (dr/(3*dz))*(R[i+1][N]- R[i-1][N]);
+		    if ( (diff = std::abs(old-W[i][N])) > max_diff ){
+                 max_diff = diff;
+            }
+            
+        }
 		
 		// Inside points
 		for (int i = 1; i < M; i++){
 			for (int j = 1; j < N; j++){
-				R[i][j] = (
+				old = R[i][j];
+                R[i][j] = (
 					  2*(1-SIGMA)/(dr*dr)*(R[i][j+1]+R[i][j-1])
 					+ 2*(1-SIGMA)/(2*dr*r(i,j))*(R[i][j+1]-R[i][j-1])  
 					+ (1-2*SIGMA)*(R[i+1][j]+R[i-1][j])/( dz*dz )
@@ -158,7 +202,12 @@ int main(){
 					+ 2*(1-2*SIGMA)/( dz*dz )
 					+ 1/( r(i,j)*r(i,j) )
 					);
-				W[i][j] = 
+				if ( (diff = std::abs(old-R[i][j])) > max_diff ){
+                    max_diff = diff;
+                }
+
+                old = W[i][j];
+                W[i][j] = 
 					(
 					  (W[i][j+1]+W[i][j-1])/(dr*dr)
 					+ (W[i][j+1]-W[i][j-1])/(2*dr*r(i,j))
@@ -169,20 +218,20 @@ int main(){
 					  ) / (1-2*SIGMA) 
 					)
 					/ ( 2/(dr*dr)+4*(1-SIGMA)/(dz*dz*(1-2*SIGMA)) );
-			}
+			    if ( (diff = std::abs(old-W[i][j])) > max_diff ){
+                    max_diff = diff;
+                }
+            }
 		}
+        std::cout << "Max: " << max_diff << "\n";
 
+        curr_diff = max_diff;
 		count++;
 	}	
 	
 	duration = (std::clock() - start)/(double)CLOCKS_PER_SEC;
-    	std::cout<<"Time:  "<< duration << "s. " <<'\n';
-	
-	//printf("R:\n");
-	//print_disp(W);
-	
-	//printf("W:\n");
-	//print_disp(W);
+    printf("Number of iterations: %zu\n", count);
+    std::cout<<"Time:  "<< duration << "s. " <<'\n';
 
 	#ifdef OCTAVE
 	write_csv(R, 'R');
@@ -206,10 +255,10 @@ int main(){
 // the following orientation:
 //
 // 	[M][0]  |---------------| [M][N]
-// 		|---------------|
-// 		|---------------|
-// 		|---------------|
-//		|---------------|
+// 		    |---------------|
+// 		    |---------------|
+// 		    |---------------|
+//		    |---------------|
 //	[0][0]	|---------------| [0][N]
 //
 // Preconditions:
@@ -285,9 +334,11 @@ double r(int i, int j){
 // Postconditions:
 // 	pressure at the point (i,j) calculated and returned.
 double P(int i, int j){
-	//return 0;
-	return std::pow(r(i,j),2) - std::pow(R_EDGE,2);
+	return 1;
+	//return std::pow(r(i,j),2) - std::pow(R_EDGE,2);
 	//return sin(2*PI*r(i,j)/R_EDGE); 
+	//return std::exp(r(i,j));
+	//return 1 - 2*r(i,j)*r(i,j);
 	//return ((E*std::pow(TAU,3)*56*H)/(12*(1-SIGMA*SIGMA)*std::pow(R_EDGE,4)));
 }
 
