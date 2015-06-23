@@ -40,10 +40,10 @@
 
 const int M = 100;
 const int N = 100;
-const double E = std::pow(10,6);		// dynes/cm^2,	Young's modulus of eye	
-const double SIGMA = .4;			//     		Poisson's ration of CL
-const double R_EDGE = 1;			// cm, 		radius of undeformed CL
-const double DEPTH =  1;			// cm,		depth of eye
+const double E = std::pow(10,6);		    // dynes/cm^2,	Young's modulus of eye	
+const double SIGMA = .4;			        //     		Poisson's ration of CL
+const double R_EDGE = 1;			        // cm, 		radius of undeformed CL
+const double DEPTH =  1;			        // cm,		depth of eye
 const double H = 3 * std::pow(10,-4);		// cm, 		PLTF thickness
 const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 
@@ -54,9 +54,8 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 
 void print_disp(double **function);
 void write_csv(double **function, char ch);
-double zerosum(double **W);
+double function_average(double **W);
 double r(int i, int j);
-double P(int i, int j);
 
 // Main functino in the cylindrical solution.
 // Populates R and W with zeros as an initial
@@ -68,12 +67,25 @@ double P(int i, int j);
 //		R and W equilibrium values calculated 
 //		for each point (i,j) on the grid.
 int main(){
-
+    
+    FILE *pFile;
+    pFile = fopen("pressure.txt", "r");
+    double P[N+1];
+    float f;
+        
+    for (int n=0; n<N+1; n++){
+        fscanf(pFile, "%f", &f);
+        P[n] = f;
+        printf("P[%zu] %lf \n", (size_t)n, P[n]); 
+    }
+    
+    
 	// Populate R and W
 	double **R = new double*[M+1];
 	double **W = new double*[M+1];
     double **W_old = new double*[M+1];
-   
+    
+
 	for (size_t i = 0; i < M + 1; i++){
 		R[i] = new double[N+1];
 		W[i] = new double[N+1];
@@ -135,7 +147,7 @@ int main(){
         gs = 4*W[M-1][N]/3 - W[M-2][N]/3 
                 - ( 2*dz*SIGMA/( 3*(1-SIGMA) ) )*(
                 (3*R[M][N]-4*R[M][N-1]+R[M][N-2])/(2*dr)+R[M][N]/r(M,N))
-                - 2*dz*P(M,N)*(1+SIGMA)*(1-2*SIGMA)/(3*(1-SIGMA)*E);
+                - 2*dz*P[N]*(1+SIGMA)*(1-2*SIGMA)/(3*(1-SIGMA)*E);
         W[M][N] = old + OMEGA*(gs-old);
         
  
@@ -165,7 +177,7 @@ int main(){
 
             old = W[M][j];
             gs = W[M-1][j] 
-				- dz*(1 + SIGMA)*(1 - 2*SIGMA)*P(M, j)/((1 - SIGMA)*E) 
+				- dz*(1 + SIGMA)*(1 - 2*SIGMA)*P[j]/((1 - SIGMA)*E) 
 				- ( dz*SIGMA / (1 - SIGMA) )*
 				(
 					(R[M][j+1] - R[M][j-1])/(2*dr)
@@ -238,7 +250,7 @@ int main(){
             }
         }
         
-        double av = zerosum(W);
+        double av = function_average(W);
         for(int i=0; i<M+1; i++){    
             for(int j=0; j<N+1; j++){
                 W[i][j] -= av;
@@ -263,10 +275,11 @@ int main(){
     printf("Number of iterations: %zu\n", count);
     std::cout<<"Time:  "<< duration << "s. " <<'\n';
 
-	#ifdef OCTAVE
 	write_csv(R, 'R');
 	write_csv(W, 'W');
-	std::system("octave display.m");
+	
+    #ifdef OCTAVE	
+    std::system("octave display.m");
 	#endif
 	
 	for (size_t i = 0; i < M + 1; i++){
@@ -276,8 +289,8 @@ int main(){
 	
 	delete [] R;
 	delete [] W;	
-
-	return 0;
+	
+    return 0;
 }
 
 // print_disp() displays the specified displacement function. All printed 
@@ -356,7 +369,7 @@ double r(int i, int j){
 }
 
 
-double zerosum(double **W){
+double function_average(double **W){
     double avg = 0.0;
     for(int i=0; i<M+1; i++){    
         for(int j=0; j<N+1; j++){
@@ -366,22 +379,3 @@ double zerosum(double **W){
     avg = avg/(M*N);
     return avg;
 }
-
-// Pressure function. Used to calculate the pressure due the a contact lens
-// on the top boundary.
-//
-// Preconditions:
-// 	none
-// Postconditions:
-// 	pressure at the point (i,j) calculated and returned.
-double P(int i, int j){
-	//return 0;
-	//return std::pow(r(i,j),2) - std::pow(R_EDGE,2);
-	return sin(2*PI*r(i,j)/R_EDGE); 
-	//return std::exp(r(i,j));
-	//return (r(i,j)-1)*r(i,j)*(-96678*r(i,j)+28674)*(r(i,j)-.7);
-    //return (2 - 2*r(i,j)*r(i,j))*2000;
-	//return ((E*std::pow(TAU,3)*56*H)/(12*(1-SIGMA*SIGMA)*std::pow(R_EDGE,4)));
-}
-
-
