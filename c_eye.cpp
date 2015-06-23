@@ -114,9 +114,6 @@ int main(){
         old = W[M][0];
         gs = W[M][1]; 
         W[M][0] = old + OMEGA_LOW*(gs-old);
-        /*if ( (diff = std::abs(old-W[M][0])) > max_diff ){
-            max_diff = diff;
-        }*/
 		
         // (N,0) (lower right corner) 
 		R[0][N] = (
@@ -140,23 +137,28 @@ int main(){
                 (3*R[M][N]-4*R[M][N-1]+R[M][N-2])/(2*dr)+R[M][N]/r(M,N))
                 - 2*dz*P(M,N)*(1+SIGMA)*(1-2*SIGMA)/(3*(1-SIGMA)*E);
         W[M][N] = old + OMEGA*(gs-old);
-        /*if ( (diff = std::abs(old-W[M][N])) > max_diff ){
-            max_diff = diff;
-        }*/
         
  
 		// i = 0 (lower bound w/o corners)
 		for (int j = 1; j < N; j++){
-			R[0][j] = R[1][j] + dz/(2*dr)*( W[0][j+1]-W[0][j-1] );
-			W[0][j] = W[1][j] + (SIGMA*dz / (1 - SIGMA)) *((R[0][j+1] - R[0][j-1]) 
+			old = R[0][j];
+            gs = R[1][j] + dz/(2*dr)*( W[0][j+1]-W[0][j-1] );
+            R[0][j] = old + .8*(gs-old);
+            if ( (diff = std::abs(old-R[0][j])) > max_diff ){
+                max_diff = diff;
+            }
+
+            old = W[0][j];
+            gs = W[1][j] + (SIGMA*dz / (1 - SIGMA)) *((R[0][j+1] - R[0][j-1]) 
                      / (2*dr) + R[0][j] / r(0, j));    
+            W[0][j] = old + 1.1*(gs-old);
         }
 
 		// i = M (top bound w/o corners)
 		for (int j = 1; j < N; j++){
             old = R[M][j];
 			gs = R[M-1][j] - dz *(W[M][j+1] - W[M][j-1]) / (2 * dr);
-            R[M][j] = old + .9*(gs - old);
+            R[M][j] = old + .8*(gs - old);
             if ( (diff = std::abs(old-R[M][j])) > max_diff ){
                  max_diff = diff;
             }
@@ -169,10 +171,7 @@ int main(){
 					(R[M][j+1] - R[M][j-1])/(2*dr)
 					+ R[M][j]/r(M,j) 
 				);
-            W[M][j] = old + .9*(gs - old);
-            /*if ( (diff = std::abs(old-W[M][j])) > max_diff ){
-                 max_diff = diff;
-            }*/
+            W[M][j] = old + .8*(gs - old);
 		}
 		
 		// j = 0 (left bound w/o corners)
@@ -182,9 +181,6 @@ int main(){
             old = W[i][0];
             gs = W[i][1]; 
 		    W[i][0] = old + OMEGA*(gs-old);  
-            /*if ( (diff = std::abs(old-W[i][0])) > max_diff ){
-                 max_diff = diff;
-            }*/
         }
 
 		// j = N (right boundary w/o corners)
@@ -204,14 +200,8 @@ int main(){
             old = W[i][N];
             gs = 4*W[i][N-1]/3 - W[i][N-2]/3 - (dr/(3*dz))*(R[i+1][N]- R[i-1][N]);
 		    W[i][N] = old + OMEGA_LOW*(gs-old);
-            /*if ( (diff = std::abs(old-W[i][N])) > max_diff ){
-                 max_diff = diff;
-            }*/
-            
         }
 		
-        //inspectW = W[6][6];
-		//inspectR = R[6][6];
         // Inside points
 		for (int i = 1; i < M; i++){
 			for (int j = 1; j < N; j++){
@@ -227,7 +217,7 @@ int main(){
 					+ 2*(1-2*SIGMA)/( dz*dz )
 					+ 1/( r(i,j)*r(i,j) )
 					);
-				R[i][j] = old + 1.75*(gs-old);
+				R[i][j] = old + 1.86*(gs-old);
                 if ( (diff = std::abs(old-R[i][j])) > max_diff ){
                     max_diff = diff;
                 }
@@ -245,11 +235,9 @@ int main(){
 					)
 					/ ( 2/(dr*dr)+4*(1-SIGMA)/(dz*dz*(1-2*SIGMA)) );
 			    W[i][j] = old + 1.75*(gs-old);
-                /*if ( (diff = std::abs(old-W[i][j])) > max_diff ){
-                    max_diff = diff;
-                }*/
             }
         }
+        
         double av = zerosum(W);
         for(int i=0; i<M+1; i++){    
             for(int j=0; j<N+1; j++){
