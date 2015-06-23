@@ -16,6 +16,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <cmath>
+#include <cstring>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
@@ -53,6 +54,7 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 
 void print_disp(double **function);
 void write_csv(double **function, char ch);
+double zerosum(double **W);
 double r(int i, int j);
 double P(int i, int j);
 
@@ -70,11 +72,13 @@ int main(){
 	// Populate R and W
 	double **R = new double*[M+1];
 	double **W = new double*[M+1];
-       
+    double **W_old = new double*[M+1];
+   
 	for (size_t i = 0; i < M + 1; i++){
 		R[i] = new double[N+1];
 		W[i] = new double[N+1];
-		for (size_t j = 0; j < N+1; j++){
+		W_old[i] = new double[N+1];
+        for (size_t j = 0; j < N+1; j++){
 			R[i][j] = 0.00;
 			W[i][j] = 0.00;
 		}
@@ -86,34 +90,40 @@ int main(){
 	start = std::clock();
 	
     double curr_diff = 100.0, max_diff, old, gs, diff;
-	size_t count = 0;
-	//while(count < NUM_ITER){
+	double inspectW, inspectR;
+    size_t count = 0;
+    
     while (curr_diff > std::pow(10,-15)){
 		max_diff = 0;
         
+        for (size_t i = 0; i < M+1; i++){
+            memcpy(W_old[i], W[i], sizeof(double)*(N+1));         
+        }
+
         // (0,0) (lower left corner
         R[0][0] = 0;
         
         old = W[0][0];
 		gs = W[0][1];
         W[0][0] = old + OMEGA*(gs-old);
-        if ( (diff = std::abs(old-W[0][0])) > max_diff ){ 
-            max_diff = diff;
-        }
-
+        
+       
 		// (0,M) (top left corner)
 		R[M][0] = 0;
 		
         old = W[M][0];
         gs = W[M][1]; 
         W[M][0] = old + OMEGA_LOW*(gs-old);
-        if ( (diff = std::abs(old-W[M][0])) > max_diff ){
+        /*if ( (diff = std::abs(old-W[M][0])) > max_diff ){
             max_diff = diff;
-        }
+        }*/
 		
         // (N,0) (lower right corner) 
-		R[0][N] = 0; 
-		W[0][N] = 0;
+		R[0][N] = (
+                    (1-SIGMA)*R[0][N-1]/dr - SIGMA*(W[1][N]-W[0][N])/dz
+                  )
+                  /( (1-SIGMA)/dr + SIGMA/r(0,N) ); 
+		W[0][N] = W[0][N-1];
 
 		// (N,M) (top right corner)
         old = R[M][N];
@@ -130,36 +140,39 @@ int main(){
                 (3*R[M][N]-4*R[M][N-1]+R[M][N-2])/(2*dr)+R[M][N]/r(M,N))
                 - 2*dz*P(M,N)*(1+SIGMA)*(1-2*SIGMA)/(3*(1-SIGMA)*E);
         W[M][N] = old + OMEGA*(gs-old);
-        if ( (diff = std::abs(old-W[M][N])) > max_diff ){
+        /*if ( (diff = std::abs(old-W[M][N])) > max_diff ){
             max_diff = diff;
-        }
+        }*/
         
  
 		// i = 0 (lower bound w/o corners)
 		for (int j = 1; j < N; j++){
-			R[0][j] = 0;
-			W[0][j] = 0;		
+			R[0][j] = R[1][j] + dz/(2*dr)*( W[0][j+1]-W[0][j-1] );
+			W[0][j] = W[1][j] + (SIGMA*dz / (1 - SIGMA)) *((R[0][j+1] - R[0][j-1]) 
+                     / (2*dr) + R[0][j] / r(0, j));    
         }
 
 		// i = M (top bound w/o corners)
 		for (int j = 1; j < N; j++){
             old = R[M][j];
-			R[M][j] = R[M-1][j] - dz *(W[M][j+1] - W[M][j-1]) / (2 * dr);
+			gs = R[M-1][j] - dz *(W[M][j+1] - W[M][j-1]) / (2 * dr);
+            R[M][j] = old + .9*(gs - old);
             if ( (diff = std::abs(old-R[M][j])) > max_diff ){
                  max_diff = diff;
             }
 
             old = W[M][j];
-            W[M][j] = W[M-1][j] 
+            gs = W[M-1][j] 
 				- dz*(1 + SIGMA)*(1 - 2*SIGMA)*P(M, j)/((1 - SIGMA)*E) 
 				- ( dz*SIGMA / (1 - SIGMA) )*
 				(
 					(R[M][j+1] - R[M][j-1])/(2*dr)
 					+ R[M][j]/r(M,j) 
 				);
-            if ( (diff = std::abs(old-W[M][j])) > max_diff ){
+            W[M][j] = old + .9*(gs - old);
+            /*if ( (diff = std::abs(old-W[M][j])) > max_diff ){
                  max_diff = diff;
-            }
+            }*/
 		}
 		
 		// j = 0 (left bound w/o corners)
@@ -169,11 +182,10 @@ int main(){
             old = W[i][0];
             gs = W[i][1]; 
 		    W[i][0] = old + OMEGA*(gs-old);  
-            if ( (diff = std::abs(old-W[i][0])) > max_diff ){
+            /*if ( (diff = std::abs(old-W[i][0])) > max_diff ){
                  max_diff = diff;
-            }
+            }*/
         }
-
 
 		// j = N (right boundary w/o corners)
 		for (int i = 1; i < M; i++){
@@ -192,13 +204,15 @@ int main(){
             old = W[i][N];
             gs = 4*W[i][N-1]/3 - W[i][N-2]/3 - (dr/(3*dz))*(R[i+1][N]- R[i-1][N]);
 		    W[i][N] = old + OMEGA_LOW*(gs-old);
-            if ( (diff = std::abs(old-W[i][N])) > max_diff ){
+            /*if ( (diff = std::abs(old-W[i][N])) > max_diff ){
                  max_diff = diff;
-            }
+            }*/
             
         }
 		
-		// Inside points
+        //inspectW = W[6][6];
+		//inspectR = R[6][6];
+        // Inside points
 		for (int i = 1; i < M; i++){
 			for (int j = 1; j < N; j++){
 				old = R[i][j];
@@ -213,7 +227,7 @@ int main(){
 					+ 2*(1-2*SIGMA)/( dz*dz )
 					+ 1/( r(i,j)*r(i,j) )
 					);
-				R[i][j] = old + OMEGA*(gs-old);
+				R[i][j] = old + 1.75*(gs-old);
                 if ( (diff = std::abs(old-R[i][j])) > max_diff ){
                     max_diff = diff;
                 }
@@ -230,13 +244,28 @@ int main(){
 					  ) / (1-2*SIGMA) 
 					)
 					/ ( 2/(dr*dr)+4*(1-SIGMA)/(dz*dz*(1-2*SIGMA)) );
-			    W[i][j] = old + OMEGA*(gs-old);
-                if ( (diff = std::abs(old-W[i][j])) > max_diff ){
+			    W[i][j] = old + 1.75*(gs-old);
+                /*if ( (diff = std::abs(old-W[i][j])) > max_diff ){
+                    max_diff = diff;
+                }*/
+            }
+        }
+        double av = zerosum(W);
+        for(int i=0; i<M+1; i++){    
+            for(int j=0; j<N+1; j++){
+                W[i][j] -= av;
+            }
+        }
+    
+        for(size_t i = 0; i<M+1; i++){
+            for(size_t j=0; j<N+1; j++){
+                if ( (diff = std::abs(W_old[i][j]-W[i][j])) > max_diff ){ 
                     max_diff = diff;
                 }
             }
-		}
-        std::cout << "Max: " << max_diff << "\n";
+        }
+
+        printf("Max diff: %e\n", max_diff);
 
         curr_diff = max_diff;
 		count++;
@@ -339,6 +368,17 @@ double r(int i, int j){
 }
 
 
+double zerosum(double **W){
+    double avg = 0.0;
+    for(int i=0; i<M+1; i++){    
+        for(int j=0; j<N+1; j++){
+            avg += W[i][j];
+        }
+    }
+    avg = avg/(M*N);
+    return avg;
+}
+
 // Pressure function. Used to calculate the pressure due the a contact lens
 // on the top boundary.
 //
@@ -349,9 +389,10 @@ double r(int i, int j){
 double P(int i, int j){
 	//return 0;
 	//return std::pow(r(i,j),2) - std::pow(R_EDGE,2);
-	//return sin(2*PI*r(i,j)/R_EDGE); 
+	return sin(2*PI*r(i,j)/R_EDGE); 
 	//return std::exp(r(i,j));
-	return 2 - 2*r(i,j)*r(i,j);
+	//return (r(i,j)-1)*r(i,j)*(-96678*r(i,j)+28674)*(r(i,j)-.7);
+    //return (2 - 2*r(i,j)*r(i,j))*2000;
 	//return ((E*std::pow(TAU,3)*56*H)/(12*(1-SIGMA*SIGMA)*std::pow(R_EDGE,4)));
 }
 
