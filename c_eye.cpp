@@ -27,10 +27,8 @@
 //
 
 #define NUM_ITER 5000
-#define TOLERANCE std::pow(10,-15)
 #define dr (R_EDGE/N)
 #define dz (DEPTH/M)
-#define PI 3.14159265
 #define OMEGA 1.41
 #define OMEGA_LOW 1.38
 
@@ -38,15 +36,13 @@
 // Globals
 //
 
-const int M = 100;
-const int N = 100;
-const double E = std::pow(10,6);		    // dynes/cm^2,	Young's modulus of eye	
-const double SIGMA = .4;			        //     		Poisson's ration of CL
-const double R_EDGE = 1;			        // cm, 		radius of undeformed CL
-const double DEPTH =  1;			        // cm,		depth of eye
-const double H = 3 * std::pow(10,-4);		// cm, 		PLTF thickness
-const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
-
+int M, N;
+double E;		    // dynes/cm^2,	Young's modulus of eye	
+double SIGMA;		//     	    	Poisson's ration of CL
+double R_EDGE;	    // cm, 		    radius of undeformed CL
+double DEPTH;       // cm,		    depth of eye
+double DELTA;       // cm,          convergence condition
+double *P;          // dynes
 
 //
 // Functions
@@ -54,6 +50,7 @@ const double TAU = 4 * std::pow(10 ,-3);	// cm, 		thickness of undeformed CL
 
 void print_disp(double **function);
 void write_csv(double **function, char ch);
+void read_config(FILE *file, char *filename);
 double function_average(double **W);
 double r(int i, int j);
 
@@ -66,26 +63,25 @@ double r(int i, int j);
 // Postconditions:
 //		R and W equilibrium values calculated 
 //		for each point (i,j) on the grid.
-int main(){
-    
-    FILE *pFile;
-    pFile = fopen("pressure.txt", "r");
-    double P[N+1];
-    float f;
-        
-    for (int n=0; n<N+1; n++){
-        fscanf(pFile, "%f", &f);
-        P[n] = f;
-        printf("P[%zu] %lf \n", (size_t)n, P[n]); 
+int main(int argc, char *argv[]){
+    if (argc != 2) {
+        printf("Usage: ./clp config_file.txt\n");
+        return EXIT_SUCCESS;
     }
+    FILE *pFile;
+    pFile = fopen(argv[1], "r");
+    if(!pFile){
+        printf("Error opening file.\n");
+        return EXIT_FAILURE;
+    }
+
+    read_config(pFile, argv[1]); 
     
-    
-	// Populate R and W
+    // Populate R and W
 	double **R = new double*[M+1];
 	double **W = new double*[M+1];
     double **W_old = new double*[M+1];
     
-
 	for (size_t i = 0; i < M + 1; i++){
 		R[i] = new double[N+1];
 		W[i] = new double[N+1];
@@ -102,10 +98,9 @@ int main(){
 	start = std::clock();
 	
     double curr_diff = 100.0, max_diff, old, gs, diff;
-	double inspectW, inspectR;
     size_t count = 0;
     
-    while (curr_diff > std::pow(10,-15)){
+    while (curr_diff > DELTA){
 		max_diff = 0;
         
         for (size_t i = 0; i < M+1; i++){
@@ -251,21 +246,16 @@ int main(){
         }
         
         double av = function_average(W);
-        for(int i=0; i<M+1; i++){    
-            for(int j=0; j<N+1; j++){
-                W[i][j] -= av;
-            }
-        }
-    
         for(size_t i = 0; i<M+1; i++){
             for(size_t j=0; j<N+1; j++){
+                W[i][j] -= av;
                 if ( (diff = std::abs(W_old[i][j]-W[i][j])) > max_diff ){ 
                     max_diff = diff;
                 }
             }
         }
 
-        printf("Max diff: %e\n", max_diff);
+        //printf("Max diff: %e\n", max_diff);
 
         curr_diff = max_diff;
 		count++;
@@ -273,7 +263,7 @@ int main(){
 	
 	duration = (std::clock() - start)/(double)CLOCKS_PER_SEC;
     printf("Number of iterations: %zu\n", count);
-    std::cout<<"Time:  "<< duration << "s. " <<'\n';
+    std::cout<<"Time:  "<< duration << "s. " <<"\n\n\n";
 
 	write_csv(R, 'R');
 	write_csv(W, 'W');
@@ -289,7 +279,7 @@ int main(){
 	
 	delete [] R;
 	delete [] W;	
-	
+	delete [] P;
     return 0;
 }
 
@@ -368,6 +358,46 @@ double r(int i, int j){
 	return j * dr;
 }
 
+void read_config(FILE *pFile, char *filename){
+    char buff[50], buff2[50];
+    printf("\n\n\nUsing config file %s ...\n\n", filename);
+    pFile = fopen(filename, "r");
+    fscanf(pFile, "%s", &buff);
+    fscanf(pFile, "%d", &M);
+    N = M;
+    printf("%s %dx%d\n", buff, M, N);
+    
+    fscanf(pFile, "%s", &buff);
+    fscanf(pFile, "%s", &buff2);
+    fscanf(pFile, "%lf", &E);
+    printf("%s %s %e\n", buff, buff2, E); 
+    
+    fscanf(pFile, "%s", &buff);
+    fscanf(pFile, "%s", &buff2);
+    fscanf(pFile, "%lf", &SIGMA);
+    printf("%s %g\n", buff, buff2, SIGMA);   
+    
+    fscanf(pFile, "%s", &buff);
+    fscanf(pFile, "%s", &buff2);
+    fscanf(pFile, "%lf", &R_EDGE);
+    printf("%s %s %g\n", buff, buff2, R_EDGE);
+    
+    fscanf(pFile, "%s", &buff);
+    fscanf(pFile, "%s", &buff2);
+    fscanf(pFile, "%lf", &DEPTH);
+    printf("%s %s %g\n", buff, buff2, DEPTH);
+    
+    fscanf(pFile, "%s", &buff);
+    fscanf(pFile, "%lf", &DELTA);
+    printf("%s %e\n", buff, DELTA);  
+    
+    // Pressure
+    P = new double[N+1];
+    fscanf(pFile, "%s", &buff);
+    for (size_t i = 0; i<N+1; i++){
+        fscanf(pFile, "%lf", &P[i]);
+    }
+}
 
 double function_average(double **W){
     double avg = 0.0;
