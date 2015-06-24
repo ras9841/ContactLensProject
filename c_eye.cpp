@@ -255,8 +255,10 @@ int main(int argc, char *argv[]){
             }
         }
 
-        //printf("Max diff: %e\n", max_diff);
-
+        //if ( count%10000 == 0 ){
+          //  printf("Current iteration: %d\n", count);
+            printf("Max diff: %e\n", max_diff);
+        //}
         curr_diff = max_diff;
 		count++;
 	}	
