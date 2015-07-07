@@ -29,6 +29,7 @@
 #define OMEGA_LOW 1//1.38
 
 double dr, dz;
+void usage();
 
 // Main functino in the cylindrical solution.
 // Populates R and W with zeros as an initial
@@ -47,20 +48,13 @@ int main(int argc, char *argv[]){
     double DEPTH;       // cm,          depth of eye
     double DELTA;       // cm,          convergence condition
     double *P;          // dynes
+    double *f, *g;      // cm           f->eye shape, g->lens shape 
+    double *TAU;        // cm           lens thickness
     
-    
-    if (argc != 2) {
-        printf("Usage: ./clp config_file.txt\n");
-        return EXIT_SUCCESS;
-    }
-    FILE *pFile;
-    pFile = fopen(argv[1], "r");
-    if(!pFile){
-        printf("Error opening file.\n");
-        return EXIT_FAILURE;
-    }
-
-    read_config(pFile, argv[1], &M, &N, &P, &E, &SIGMA, &R_EDGE, &DEPTH, &DELTA); 
+    if (argc != 6) { usage(); }
+   
+    read_config(argv, &M, &N, &P, &E, &SIGMA, &R_EDGE, &DEPTH, &DELTA, 
+                &f, &g, &TAU); 
     dr = R_EDGE/(double)N;
     dz = DEPTH/(double)M;
 
@@ -79,6 +73,14 @@ int main(int argc, char *argv[]){
 		}
 	}
  
+    // Populate R_CL and T_CL
+    double *R_CL = new double[N+1];
+    double *T_CL = new double[N+1];
+    for (size_t j =0; j<N+1; j++){
+        R_CL[j] = 0.00;
+        T_CL[j] = 0.00;
+    }
+
 	// Setup timer
 	std::clock_t start;
 	double duration;
@@ -270,5 +272,16 @@ int main(int argc, char *argv[]){
 	delete [] R;
 	delete [] W;	
 	delete [] P;
+    delete [] R_CL;
+    delete [] T_CL;
+    delete [] TAU;
+
     return 0;
 }
+
+void usage() {
+    printf("Usage: ./clp config_file.txt pressure_file.txt ");
+    printf("lens_shape.txt eye_shape.txt tau.txt\n");
+    exit(0);
+}
+

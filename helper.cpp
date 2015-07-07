@@ -2,6 +2,8 @@
 #include <iostream>
 #include <cmath>
 #include <fstream>
+#include <stdlib.h>
+#include <stdio.h>
 
 // print_disp() displays the specified displacement function. All printed 
 // values are rounded to 15 decimal places. The functions are printed in
@@ -78,12 +80,31 @@ double r(int i, int j){
 	return j * dr;
 }
 
-void read_config(FILE *pFile, char *filename, int *M, int *N, double **P,
-                 double *E, double *SIGMA, double *R_EDGE, double *DEPTH,
-                 double *DELTA){
+void file_error(char *filename){
+    printf("Error opening file %s.\n", filename);
+    exit(1);   
+}
+
+void read_config(char *filenames[], int *M, int *N, double **P, double *E, 
+                 double *SIGMA, double *R_EDGE, double *DEPTH, double *DELTA,
+                 double **f, double **g, double **TAU){
+    // check files (DONT USE filenames[0])
+    FILE *pFile, *pressureFile, *clFile, *eyeFile, *tauFile;
+    pFile = fopen(filenames[1], "r");
+    pressureFile = fopen(filenames[2], "r");
+    clFile = fopen(filenames[3], "r");
+    eyeFile = fopen(filenames[4], "r");
+    tauFile = fopen(filenames[5], "r");
+
+    if (!pFile) { file_error(filenames[1]); }
+    if (!pressureFile) { file_error(filenames[2]); }
+    if (!clFile) { file_error(filenames[3]); }
+    if (!eyeFile) { file_error(filenames[4]); }
+    if (!tauFile) { file_error(filenames[5]); }
+ 
+    
     char buff[50], buff2[50];
-    printf("\n\n\nUsing config file %s ...\n\n", filename);
-    pFile = fopen(filename, "r");
+    printf("\n\n\nUsing config file %s ...\n\n", filenames[1]);
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%d", M);
     *N = *M;
@@ -115,11 +136,30 @@ void read_config(FILE *pFile, char *filename, int *M, int *N, double **P,
     
     // Pressure
     *P = new double[*N+1];
-    fscanf(pFile, "%s", &buff);
     for (int i = 0; i<*N+1; i++){
-        fscanf(pFile, "%lf", &((*P)[i]));
+        fscanf(pressureFile, "%lf", &((*P)[i]));
     }
+
+    // Contact Lens Shape
+    *g = new double[*N+1];
+    for (int i = 0; i<*N+1; i++){
+        fscanf(clFile, "%lf", &((*g)[i]));
+    }
+    
+    // Eye Shape
+    *f = new double[*N+1];
+    for (int i = 0; i<*N+1; i++){
+        fscanf(eyeFile, "%lf", &((*f)[i]));
+    }
+
+    // Eye Shape
+    *TAU = new double[*N+1];
+    for (int i = 0; i<*N+1; i++){
+        fscanf(tauFile, "%lf", &((*TAU)[i]));
+    } 
+
 }
+
 
 double function_average(double **W, int M, int N){
     double avg = 0.0;
