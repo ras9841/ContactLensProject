@@ -28,7 +28,7 @@
 #define OMEGA 1//1.3
 #define OMEGA_LOW 1//1.38
 
-double dr, dz;
+double dr, dz, E, SIGMA, R_EDGE;
 void usage();
 
 // Main functino in the cylindrical solution.
@@ -42,9 +42,6 @@ void usage();
 //		for each point (i,j) on the grid.
 int main(int argc, char *argv[]){
     int M, N;
-    double E;           // dynes/cm^2,  Young's modulus of eye  
-    double SIGMA;       //              Poisson's ration of CL
-    double R_EDGE;      // cm,          radius of undeformed CL
     double DEPTH;       // cm,          depth of eye
     double DELTA;       // cm,          convergence condition
     double *P;          // dynes
@@ -92,6 +89,9 @@ int main(int argc, char *argv[]){
     while (curr_diff > DELTA){
 		max_diff = 0;
         
+        if (count%20 == 0){
+            get_pressure(P, f, g, TAU, T_CL, R_CL, M, N);
+        }
         for (size_t i = 0; i < M+1; i++){
             memcpy(W_old[i], W[i], sizeof(double)*(N+1));         
         }

@@ -1,9 +1,33 @@
 #include "helper.h"
+#include "spline.h"
 #include <iostream>
 #include <cmath>
 #include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
+#include <vector>
+
+void printdp(double *func, int N){
+    for (int i=0; i<N; i++){
+        if (i%10 == 0){ printf("\n"); }
+	    std::cout << func[i] << ",\t";
+    }
+}
+
+void get_pressure(double *P, double *f, double *g, double *TAU,
+                  double *T_CL, double *R_CL, int M, int N){
+    // Spline for f
+    std::vector<double> X(N+1), Y(N+1);
+    for (int i=0; i<N+1; i++){
+        X[i] = r(M,i);
+        Y[i] = f[i];
+    }
+    tk::spline spline_f;
+    spline_f.set_points(X,Y); // X MUST BE SORTED.
+
+}
+
+
 
 // print_disp() displays the specified displacement function. All printed 
 // values are rounded to 15 decimal places. The functions are printed in
