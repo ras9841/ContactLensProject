@@ -20,6 +20,7 @@
 #include <ctime>
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include "helper.h"
 
 //
@@ -28,6 +29,7 @@
 #define OMEGA 1//1.3
 #define OMEGA_LOW 1//1.38
 
+int M,N;
 double dr, dz, E, SIGMA, R_EDGE;
 void usage();
 
@@ -41,12 +43,12 @@ void usage();
 //		R and W equilibrium values calculated 
 //		for each point (i,j) on the grid.
 int main(int argc, char *argv[]){
-    int M, N;
     double DEPTH;       // cm,          depth of eye
     double DELTA;       // cm,          convergence condition
     double *P;          // dynes
-    double *f, *g;      // cm           f->eye shape, g->lens shape 
+    double *g;          // cm           g->lens shape 
     double *TAU;        // cm           lens thickness
+    double *f;          // cm           f->eye shape
     
     if (argc != 6) { usage(); }
    
@@ -74,7 +76,7 @@ int main(int argc, char *argv[]){
     double *R_CL = new double[N+1];
     double *T_CL = new double[N+1];
     for (size_t j =0; j<N+1; j++){
-        R_CL[j] = 0.00;
+        R_CL[j] = r(M,j);
         T_CL[j] = 0.00;
     }
 
@@ -90,7 +92,7 @@ int main(int argc, char *argv[]){
 		max_diff = 0;
         
         if (count%20 == 0){
-            get_pressure(P, f, g, TAU, T_CL, R_CL, M, N);
+            get_pressure(P, f, g, TAU, T_CL, R_CL, W[M]);
         }
         for (size_t i = 0; i < M+1; i++){
             memcpy(W_old[i], W[i], sizeof(double)*(N+1));         
@@ -234,7 +236,7 @@ int main(int argc, char *argv[]){
             }
         }
         
-        double av = function_average(W, M, N);
+        double av = function_average(W);
         for(size_t i = 0; i<M+1; i++){
             for(size_t j=0; j<N+1; j++){
                 W[i][j] -= av;
@@ -257,8 +259,8 @@ int main(int argc, char *argv[]){
     printf("Number of iterations: %zu\n", count);
     std::cout<<"Time:  "<< duration << "s. " <<"\n\n\n";
 
-	write_csv(R, 'R', M, N);
-	write_csv(W, 'W', M, N);
+	write_csv(R, 'R');
+	write_csv(W, 'W');
 	
     #ifdef OCTAVE	
     std::system("octave display.m");

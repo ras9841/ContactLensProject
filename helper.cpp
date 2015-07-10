@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <vector>
 
-void printdp(double *func, int N){
+void printdp(double *func){
     for (int i=0; i<N; i++){
         if (i%10 == 0){ printf("\n"); }
 	    std::cout << func[i] << ",\t";
@@ -15,16 +15,31 @@ void printdp(double *func, int N){
 }
 
 void get_pressure(double *P, double *f, double *g, double *TAU,
-                  double *T_CL, double *R_CL, int M, int N){
+                  double *T, double *R_CL, double *W){
     // Spline for f
-    std::vector<double> X(N+1), Y(N+1);
-    for (int i=0; i<N+1; i++){
-        X[i] = r(M,i);
-        Y[i] = f[i];
+    std::vector<double> X(N+1), Y(N+1), Y_new(N+1);
+    for (int j=0; j<N+1; j++){
+        X[j] = R_CL[j];
+        Y[j] = f[j];
+        Y_new[j] = f[j] + W[j];
     }
-    tk::spline spline_f;
-    spline_f.set_points(X,Y); // X MUST BE SORTED.
+   
+    tk::spline f_init, f_new;
+    f_init.set_points(X,Y);
+    f_new.set_points(X,Y_new);
 
+    // Forward Euler for R
+    // j=0 case
+    R_CL[1] = R_CL[0] + dr*(1+(T[1] - T[0])/(dr*(1+SIGMA))); 
+    for (int j = 1; j < N; j++){         
+        R_CL[j+1] = R_CL[j] + dr*
+        (
+        (T[j]+(1+SIGMA)*r(M,j)-SIGMA*R_CL[j])*std::sqrt(
+            ( 1+std::pow((g[j+1]-g[j+1])/(2*dr),2) )
+            / ( 1+std::pow((f_new(j)-f_new(j-1))/(R_CL[j]-R_CL[j-1]),2) )  
+            )/r(M,j)             
+        ); 
+    }
 }
 
 
@@ -45,7 +60,7 @@ void get_pressure(double *P, double *f, double *g, double *TAU,
 // 		been initialized.
 // Postconditions:
 // 	function printed.
-void print_disp(double **function, int M, int N){
+void print_disp(double **function){
 	for (int i = M; i < -1; i--){
 		for (int j = 0; j < N+1; j++){
 			if (std::abs(function[i][j]) == 0){// 1*std::pow(10,-15)){
@@ -67,7 +82,7 @@ void print_disp(double **function, int M, int N){
 // 	function is not null.
 // Postconditions:
 // 	all files are closed.
-void write_csv(double **function, char ch, int M, int N){
+void write_csv(double **function, char ch){
 	char name[6];
 	name[0] = ch;
 	name[1] = '.';
@@ -170,13 +185,13 @@ void read_config(char *filenames[], int *M, int *N, double **P, double *E,
         fscanf(clFile, "%lf", &((*g)[i]));
     }
     
-    // Eye Shape
+    //  Eye Shape
     *f = new double[*N+1];
     for (int i = 0; i<*N+1; i++){
         fscanf(eyeFile, "%lf", &((*f)[i]));
     }
-
-    // Eye Shape
+ 
+    // Lens Thickness
     *TAU = new double[*N+1];
     for (int i = 0; i<*N+1; i++){
         fscanf(tauFile, "%lf", &((*TAU)[i]));
@@ -185,7 +200,7 @@ void read_config(char *filenames[], int *M, int *N, double **P, double *E,
 }
 
 
-double function_average(double **W, int M, int N){
+double function_average(double **W){
     double avg = 0.0;
     for(int i=0; i<M+1; i++){    
         for(int j=0; j<N+1; j++){
