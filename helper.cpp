@@ -14,41 +14,11 @@ void printdp(double *func){
     }
 }
 
-void tst(tk::spline f){
-    printf("F[0.5]:\t%lf\n",f(.5));
+void usage() {
+    printf("Usage: ./clp config_file.txt pressure_file.txt ");
+    printf("lens_shape.txt eye_shape.txt tau.txt\n");
+    exit(0);
 }
-
-void get_pressure(double *P, double *f, double *g, double *TAU,
-                  double *T, double *R_EYE, double *R_DISP, double *W){
-    // Spline for f
-    std::vector<double> X(N+1), Y(N+1), Y_new(N+1);
-    for (int j=0; j<N+1; j++){
-        X[j] = R_EYE[j];
-        Y[j] = f[j];
-        Y_new[j] = f[j] + W[j];
-    }
-   
-    tk::spline f_init, f_new;
-    f_init.set_points(X,Y);
-    f_new.set_points(X,Y_new);
-
-    // Forward Euler for R
-    // j=0 case
-    R_EYE[1] = R_EYE[0] + dr*(1+(T[1] - T[0])/(dr*(1+SIGMA))); 
-    for (int j = 1; j < N; j++){         
-       R_EYE[j+1] = R_EYE[j] + dr*
-        (
-        (T[j]+(1+SIGMA)*r(M,j)-SIGMA*R_EYE[j])*std::sqrt(
-            ( 1+std::pow((g[j+1]-g[j+1])/(2*dr),2) )
-            / ( 1+std::pow((f_new(j)-f_new(j-1))/(R_EYE[j]-R_EYE[j-1]),2) )  
-            )/r(M,j)             
-        ); 
-    }
-
-    // SOR for T
-}
-
-
 
 // print_disp() displays the specified displacement function. All printed 
 // values are rounded to 15 decimal places. The functions are printed in
@@ -205,10 +175,12 @@ void read_config(char *filenames[], int *M, int *N, double **P, double *E,
     double r, z;
     for (int i = 0; i<*N+1; i++){
         fscanf(eyeFile, "%lf%*c %lf%*c", &r, &z);
-        data_R->push_back(r);
-        data_Z->push_back(z);
+        (*data_R)[i] = r;
+        (*data_Z)[i] = z;
     }
- 
+    
+    printf("R[0]:\t%lf\tZ[0]:\t%lf\n", (*data_R)[0], (*data_Z)[0]);
+
     // Lens Thickness
     *TAU = new double[*N+1];
     for (int i = 0; i<*N+1; i++){

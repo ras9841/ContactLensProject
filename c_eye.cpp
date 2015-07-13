@@ -32,7 +32,32 @@
 
 int M,N;
 double dr, dz, E, SIGMA, R_EDGE, EYE_EDGE;
-void usage();
+
+void get_pressure(double *P, tk::spline f_init, tk::spline f_new, double *g, 
+        double *TAU, double *T, double *R_EYE, double *R_DISP, double *W_DISP){
+    // Splines
+    std::vector<double> X(N+1), Y(N+1);
+    for (int i=0; i<N+1; i++){
+        X[i] = R_EYE[i] + R_DISP[i];
+        Y[i] = f_init(X[i]) + W_DISP[i];
+    }    
+    f_new.set_points(X,Y);
+   
+    // Forward Euler for R
+    // j=0 case
+    R_EYE[1] = R_EYE[0] + dr*(1+(T[1] - T[0])/(dr*(1+SIGMA))); 
+    for (int j = 1; j < N; j++){         
+       R_EYE[j+1] = R_EYE[j] + dr*
+        (
+        (T[j]+(1+SIGMA)*r(M,j)-SIGMA*R_EYE[j])*std::sqrt(
+            ( 1+std::pow((g[j+1]-g[j+1])/(2*dr),2) )
+            / ( 1+std::pow((f_new(j)-f_new(j-1))/(R_EYE[j]-R_EYE[j-1]),2) )  
+            )/r(M,j)             
+        ); 
+    }
+    // SOR for T
+}
+
 
 // Main functino in the cylindrical solution.
 // Populates R and W with zeros as an initial
@@ -50,7 +75,6 @@ int main(int argc, char *argv[]){
     double *g;          // cm           g->lens shape 
     double *TAU;        // cm           lens thickness
     
-    tk::spline f;          // cm           f->eye shape
     std::vector<double> data_R, data_Z;
 
     if (argc != 6) { usage(); }
@@ -60,10 +84,9 @@ int main(int argc, char *argv[]){
     dr = R_EDGE/(double)N;
     dz = DEPTH/(double)M;
 
-    tk::spline f_init;
+    tk::spline f_init, f_new;
     f_init.set_points(data_R, data_Z);
 
-    //tst(f);
 
     // Populate R and W
 	double **R = new double*[M+1];
@@ -100,7 +123,7 @@ int main(int argc, char *argv[]){
 		max_diff = 0;
         
         if (count%20 == 0){
-//            get_pressure(P, f, g, TAU, T_EYE, R_EYE, R[M], W[M]);
+            get_pressure(P, f_init, f_new, g, TAU, T_EYE, R_EYE, R[M], W[M]);
         }
         for (size_t i = 0; i < M+1; i++){
             memcpy(W_old[i], W[i], sizeof(double)*(N+1));         
@@ -288,10 +311,3 @@ int main(int argc, char *argv[]){
 
     return 0;
 }
-
-void usage() {
-    printf("Usage: ./clp config_file.txt pressure_file.txt ");
-    printf("lens_shape.txt eye_shape.txt tau.txt\n");
-    exit(0);
-}
-

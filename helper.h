@@ -7,10 +7,7 @@
 extern double dr, dz, E, SIGMA, R_EDGE, EYE_EDGE;
 extern int M, N;
 
-void tst(tk::spline f);
-
-void get_pressure(double *P, double *f, double *g, double *TAU, 
-                  double *T_EYE, double *R_EYE, double *R_DISP, double *W);
+void usage();
 void print_disp(double**function);
 void write_csv(double **function, char ch);
 double r(int i, int j);
