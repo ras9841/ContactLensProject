@@ -14,12 +14,16 @@ void printdp(double *func){
     }
 }
 
+void tst(tk::spline f){
+    printf("F[0.5]:\t%lf\n",f(.5));
+}
+
 void get_pressure(double *P, double *f, double *g, double *TAU,
-                  double *T, double *R_CL, double *W){
+                  double *T, double *R_EYE, double *R_DISP, double *W){
     // Spline for f
     std::vector<double> X(N+1), Y(N+1), Y_new(N+1);
     for (int j=0; j<N+1; j++){
-        X[j] = R_CL[j];
+        X[j] = R_EYE[j];
         Y[j] = f[j];
         Y_new[j] = f[j] + W[j];
     }
@@ -30,16 +34,18 @@ void get_pressure(double *P, double *f, double *g, double *TAU,
 
     // Forward Euler for R
     // j=0 case
-    R_CL[1] = R_CL[0] + dr*(1+(T[1] - T[0])/(dr*(1+SIGMA))); 
+    R_EYE[1] = R_EYE[0] + dr*(1+(T[1] - T[0])/(dr*(1+SIGMA))); 
     for (int j = 1; j < N; j++){         
-        R_CL[j+1] = R_CL[j] + dr*
+       R_EYE[j+1] = R_EYE[j] + dr*
         (
-        (T[j]+(1+SIGMA)*r(M,j)-SIGMA*R_CL[j])*std::sqrt(
+        (T[j]+(1+SIGMA)*r(M,j)-SIGMA*R_EYE[j])*std::sqrt(
             ( 1+std::pow((g[j+1]-g[j+1])/(2*dr),2) )
-            / ( 1+std::pow((f_new(j)-f_new(j-1))/(R_CL[j]-R_CL[j-1]),2) )  
+            / ( 1+std::pow((f_new(j)-f_new(j-1))/(R_EYE[j]-R_EYE[j-1]),2) )  
             )/r(M,j)             
         ); 
     }
+
+    // SOR for T
 }
 
 
@@ -126,7 +132,8 @@ void file_error(char *filename){
 
 void read_config(char *filenames[], int *M, int *N, double **P, double *E, 
                  double *SIGMA, double *R_EDGE, double *DEPTH, double *DELTA,
-                 double **f, double **g, double **TAU){
+                 double **g, double **TAU, std::vector<double> *data_R,
+                 std::vector<double> *data_Z){
     // check files (DONT USE filenames[0])
     FILE *pFile, *pressureFile, *clFile, *eyeFile, *tauFile;
     pFile = fopen(filenames[1], "r");
@@ -166,6 +173,11 @@ void read_config(char *filenames[], int *M, int *N, double **P, double *E,
     
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%s", &buff2);
+    fscanf(pFile, "%lf", &EYE_EDGE);
+    printf("%s %s %g\n", buff, buff2, EYE_EDGE);
+
+    fscanf(pFile, "%s", &buff);
+    fscanf(pFile, "%s", &buff2);
     fscanf(pFile, "%lf", DEPTH);
     printf("%s %s %g\n", buff, buff2, *DEPTH);
     
@@ -186,9 +198,15 @@ void read_config(char *filenames[], int *M, int *N, double **P, double *E,
     }
     
     //  Eye Shape
-    *f = new double[*N+1];
+    //*f = new double[*N+1];
+    data_R->resize(*N+1);
+    data_Z->resize(*N+1);
+
+    double r, z;
     for (int i = 0; i<*N+1; i++){
-        fscanf(eyeFile, "%lf", &((*f)[i]));
+        fscanf(eyeFile, "%lf%*c %lf%*c", &r, &z);
+        data_R->push_back(r);
+        data_Z->push_back(z);
     }
  
     // Lens Thickness

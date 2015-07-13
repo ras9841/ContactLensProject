@@ -22,6 +22,7 @@
 #include <fstream>
 #include <vector>
 #include "helper.h"
+#include "spline.h"
 
 //
 // Macros
@@ -30,7 +31,7 @@
 #define OMEGA_LOW 1//1.38
 
 int M,N;
-double dr, dz, E, SIGMA, R_EDGE;
+double dr, dz, E, SIGMA, R_EDGE, EYE_EDGE;
 void usage();
 
 // Main functino in the cylindrical solution.
@@ -48,14 +49,21 @@ int main(int argc, char *argv[]){
     double *P;          // dynes
     double *g;          // cm           g->lens shape 
     double *TAU;        // cm           lens thickness
-    double *f;          // cm           f->eye shape
     
+    tk::spline f;          // cm           f->eye shape
+    std::vector<double> data_R, data_Z;
+
     if (argc != 6) { usage(); }
    
     read_config(argv, &M, &N, &P, &E, &SIGMA, &R_EDGE, &DEPTH, &DELTA, 
-                &f, &g, &TAU); 
+                &g, &TAU, &data_R, &data_Z); 
     dr = R_EDGE/(double)N;
     dz = DEPTH/(double)M;
+
+    tk::spline f_init;
+    f_init.set_points(data_R, data_Z);
+
+    //tst(f);
 
     // Populate R and W
 	double **R = new double*[M+1];
@@ -72,12 +80,12 @@ int main(int argc, char *argv[]){
 		}
 	}
  
-    // Populate R_CL and T_CL
-    double *R_CL = new double[N+1];
-    double *T_CL = new double[N+1];
+    // Populate R_EYE and T_EYE
+    double *R_EYE = new double[N+1];
+    double *T_EYE = new double[N+1];
     for (size_t j =0; j<N+1; j++){
-        R_CL[j] = r(M,j);
-        T_CL[j] = 0.00;
+        R_EYE[j] = r(M,j);
+        T_EYE[j] = 0.00;
     }
 
 	// Setup timer
@@ -92,7 +100,7 @@ int main(int argc, char *argv[]){
 		max_diff = 0;
         
         if (count%20 == 0){
-            get_pressure(P, f, g, TAU, T_CL, R_CL, W[M]);
+//            get_pressure(P, f, g, TAU, T_EYE, R_EYE, R[M], W[M]);
         }
         for (size_t i = 0; i < M+1; i++){
             memcpy(W_old[i], W[i], sizeof(double)*(N+1));         
@@ -274,8 +282,8 @@ int main(int argc, char *argv[]){
 	delete [] R;
 	delete [] W;	
 	delete [] P;
-    delete [] R_CL;
-    delete [] T_CL;
+    delete [] R_EYE;
+    delete [] T_EYE;
     delete [] TAU;
 
     return 0;
