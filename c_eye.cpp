@@ -61,9 +61,21 @@ void get_pressure(double *P, tk::spline f_init, tk::spline f_new, double *g,
     }
     
     // SOR for T (T[0] = T[N] = 0)
-    for (int j = 1; j < N; j++){
-        
-        //T[j]
+    // T[1] T[N-1]?
+    for (int j = 2; j < N-1; j++){
+        double r_plus_two = r(M,j+2)+r_disp[j+2]; 
+        double r_minus_two = r(M,j-2)+r_disp[j-2];
+        double updated_r = r(M,j)+r_disp[j]; 
+        T[j] = (   (  (SIGMA*T[j+1]+(1-SIGMA*SIGMA)*(r_disp[j+1]))*std::sqrt(
+            ( 1+std::pow((g[j+2]-g[j])/(2*dr),2) )
+            / (1+std::pow((f_new(r_plus_two)-f_new(updated_r))/(r_plus_two-updated_r),2))  
+            )/r(M,j+1) - (TAU[j+2]-TAU[j])*T[j+1]/(2*dr*T[j+1])  ) 
+            -  
+            (  (SIGMA*T[j-1]+(1-SIGMA*SIGMA)*(r_disp[j-1]))*std::sqrt(
+            ( 1+std::pow((g[j]-g[j-2])/(2*dr),2) )
+            / (1+std::pow((f_new(updated_r)-f_new(r_minus_two))/(updated_r-r_minus_two),2))  
+            )/r(M,j-1) - (TAU[j]-TAU[j-2])*T[j-1]/(2*dr*T[j-1])  )   
+            )*dr/(-4) - (T[j+1]+T[j-1])/(-2); 
     }
 }
 
