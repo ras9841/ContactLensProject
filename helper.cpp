@@ -179,8 +179,6 @@ void read_config(char *filenames[], int *M, int *N, double **P, double *E,
         (*data_Z)[i] = z;
     }
     
-    printf("R[0]:\t%lf\tZ[0]:\t%lf\n", (*data_R)[0], (*data_Z)[0]);
-
     // Lens Thickness
     *TAU = new double[*N+1];
     for (int i = 0; i<*N+1; i++){

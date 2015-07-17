@@ -34,28 +34,37 @@ int M,N;
 double dr, dz, E, SIGMA, R_EDGE, EYE_EDGE;
 
 void get_pressure(double *P, tk::spline f_init, tk::spline f_new, double *g, 
-        double *TAU, double *T, double *R_EYE, double *R_DISP, double *W_DISP){
+                  double *TAU, double *T, double *R_EYE, double *R_DISP, 
+                  double *W_DISP, double *r_disp){
     // Splines
     std::vector<double> X(N+1), Y(N+1);
     for (int i=0; i<N+1; i++){
-        X[i] = R_EYE[i] + R_DISP[i];
+        X[i] = R_EYE[i] + R_DISP[i]; 
         Y[i] = f_init(X[i]) + W_DISP[i];
     }    
+    
     f_new.set_points(X,Y);
-   
-    // Forward Euler for R
+     
+    // Forward Euler for r_disp
     // j=0 case
-    R_EYE[1] = R_EYE[0] + dr*(1+(T[1] - T[0])/(dr*(1+SIGMA))); 
-    for (int j = 1; j < N; j++){         
-       R_EYE[j+1] = R_EYE[j] + dr*
+    r_disp[1] = r_disp[0] + dr*(1+(T[1] - T[0])/(dr*(1+SIGMA))); 
+    for (int j = 1; j < N; j++){ 
+       double updated_r = r(M,j) + r_disp[j];        
+       double up_back_r = r(M,j-1) + r_disp[j-1];    
+       r_disp[j+1] = r_disp[j] + dr*
         (
-        (T[j]+(1+SIGMA)*r(M,j)-SIGMA*R_EYE[j])*std::sqrt(
-            ( 1+std::pow((g[j+1]-g[j+1])/(2*dr),2) )
-            / ( 1+std::pow((f_new(j)-f_new(j-1))/(R_EYE[j]-R_EYE[j-1]),2) )  
+        (T[j]+(1+SIGMA)*r(M,j)-SIGMA*r_disp[j])*std::sqrt(
+            ( 1+std::pow((g[j+1]-g[j-1])/(2*dr),2) )
+            / (1+std::pow((f_new(updated_r)-f_new(up_back_r))/(updated_r-up_back_r),2))  
             )/r(M,j)             
         ); 
     }
-    // SOR for T
+    
+    // SOR for T (T[0] = T[N] = 0)
+    for (int j = 1; j < N; j++){
+        
+        //T[j]
+    }
 }
 
 
@@ -102,13 +111,15 @@ int main(int argc, char *argv[]){
 			W[i][j] = 0.00;
 		}
 	}
- 
-    // Populate R_EYE and T_EYE
+    
+    // Populate R_EYE and T_EYE, r_disp
     double *R_EYE = new double[N+1];
     double *T_EYE = new double[N+1];
+    double *r_disp = new double[N+1];
     for (size_t j =0; j<N+1; j++){
-        R_EYE[j] = r(M,j);
+        R_EYE[j] = j*EYE_EDGE/N;
         T_EYE[j] = 0.00;
+        r_disp[j] = 0.00;
     }
 
 	// Setup timer
@@ -123,7 +134,7 @@ int main(int argc, char *argv[]){
 		max_diff = 0;
         
         if (count%20 == 0){
-            get_pressure(P, f_init, f_new, g, TAU, T_EYE, R_EYE, R[M], W[M]);
+            get_pressure(P, f_init, f_new, g, TAU, T_EYE, R_EYE, R[M], W[M], r_disp);
         }
         for (size_t i = 0; i < M+1; i++){
             memcpy(W_old[i], W[i], sizeof(double)*(N+1));         
@@ -308,6 +319,7 @@ int main(int argc, char *argv[]){
     delete [] R_EYE;
     delete [] T_EYE;
     delete [] TAU;
+    delete [] r_disp;
 
     return 0;
 }
