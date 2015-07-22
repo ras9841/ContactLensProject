@@ -100,10 +100,11 @@ void file_error(char *filename){
     exit(1);   
 }
 
-void read_config(char *filenames[], int *M, int *N, double **P, double *E, 
-                 double *SIGMA, double *R_EDGE, double *DEPTH, double *DELTA,
-                 double **g, double **TAU, std::vector<double> *data_R,
-                 std::vector<double> *data_Z){
+void read_config(char *filenames[], double **P, double *DEPTH, double *DELTA,
+                 std::vector<double> *data_R, std::vector<double> *data_Z,
+                 std::vector<double> *lens_R, std::vector<double> *lens_Z,
+                 std::vector<double> *tau_R, std::vector<double> *tau_Z){
+    
     // check files (DONT USE filenames[0])
     FILE *pFile, *pressureFile, *clFile, *eyeFile, *tauFile;
     pFile = fopen(filenames[1], "r");
@@ -118,72 +119,80 @@ void read_config(char *filenames[], int *M, int *N, double **P, double *E,
     if (!eyeFile) { file_error(filenames[4]); }
     if (!tauFile) { file_error(filenames[5]); }
  
-    
     char buff[50], buff2[50];
-    printf("\n\n\nUsing config file %s ...\n\n", filenames[1]);
+    printf("\n\n\nConfig File: \t\t\t%s\n", filenames[1]);
+    printf("Eye Shape Input: \t\t%s\n", filenames[4]);
+    printf("Lens Shape Input: \t\t%s\n", filenames[3]);
+    printf("Thinkness Profile Input: \t%s\n\n", filenames[5]); 
+
     fscanf(pFile, "%s", &buff);
-    fscanf(pFile, "%d", M);
-    *N = *M;
-    printf("%s %dx%d\n", buff, *M, *N);
+    fscanf(pFile, "%d", &M);
+    N = M;
+    printf("%s \t\t\t\t%dx%d\n", buff, M, N);
    
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%s", &buff2);
-    fscanf(pFile, "%lf", E);
-    printf("%s %s %e\n", buff, buff2, *E); 
+    fscanf(pFile, "%lf", &E);
+    printf("%s %s \t\t%e\n", buff, buff2, E); 
     
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%s", &buff2);
-    fscanf(pFile, "%lf", SIGMA);
-    printf("%s %g\n", buff, buff2, *SIGMA);   
+    fscanf(pFile, "%lf", &SIGMA);
+    printf("%s \t\t\t%g\n", buff, buff2, SIGMA);   
     
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%s", &buff2);
-    fscanf(pFile, "%lf", R_EDGE);
-    printf("%s %s %g\n", buff, buff2, *R_EDGE);
+    fscanf(pFile, "%lf", &R_EDGE);
+    printf("%s %s \t\t%g\n", buff, buff2, R_EDGE);
     
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%s", &buff2);
     fscanf(pFile, "%lf", &EYE_EDGE);
-    printf("%s %s %g\n", buff, buff2, EYE_EDGE);
+    printf("%s %s \t\t%g\n", buff, buff2, EYE_EDGE);
 
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%s", &buff2);
     fscanf(pFile, "%lf", DEPTH);
-    printf("%s %s %g\n", buff, buff2, *DEPTH);
+    printf("%s %s \t\t\t%g\n", buff, buff2, *DEPTH);
     
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%lf", DELTA);
-    printf("%s %e\n\n", buff, *DELTA);  
+    printf("%s \t\t\t%e\n\n", buff, *DELTA);  
     
     // Pressure
-    *P = new double[*N+1];
-    for (int i = 0; i<*N+1; i++){
+    *P = new double[N+1];
+    for (int i = 0; i<N+1; i++){
         fscanf(pressureFile, "%lf", &((*P)[i]));
     }
 
-    // Contact Lens Shape
-    *g = new double[*N+1];
-    for (int i = 0; i<*N+1; i++){
-        fscanf(clFile, "%lf", &((*g)[i]));
-    }
-    
-    //  Eye Shape
-    //*f = new double[*N+1];
-    data_R->resize(*N+1);
-    data_Z->resize(*N+1);
-
     double r, z;
-    for (int i = 0; i<*N+1; i++){
+    //  Eye Shape
+    data_R->resize(N+1);
+    data_Z->resize(N+1);
+    for (int i = 0; i<N+1; i++){
         fscanf(eyeFile, "%lf%*c %lf%*c", &r, &z);
         (*data_R)[i] = r;
         (*data_Z)[i] = z;
     }
     
-    // Lens Thickness
-    *TAU = new double[*N+1];
-    for (int i = 0; i<*N+1; i++){
-        fscanf(tauFile, "%lf", &((*TAU)[i]));
-    } 
+    //  Lens Shape
+    lens_R->resize(N+1);
+    lens_Z->resize(N+1);
+    for (int i = 0; i<N+1; i++){
+        fscanf(clFile, "%lf%*c %lf%*c", &r, &z);
+        (*lens_R)[i] = r;
+        (*lens_Z)[i] = z;
+    }
+    
+    //  Lens Thickness (Tau)
+    tau_R->resize(N+1);
+    tau_Z->resize(N+1);
+    for (int i = 0; i<N+1; i++){
+        fscanf(tauFile, "%lf%*c %lf%*c", &r, &z);
+        (*tau_R)[i] = r;
+        (*tau_Z)[i] = z;
+    }
+    
 
 }
 

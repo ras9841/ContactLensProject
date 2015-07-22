@@ -33,8 +33,8 @@
 int M,N;
 double dr, dz, E, SIGMA, R_EDGE, EYE_EDGE;
 
-void get_pressure(double *P, tk::spline f_init, tk::spline f_new, double *g, 
-                  double *TAU, double *T, double *R_EYE, double *R_DISP, 
+void get_pressure(double *P, tk::spline f_init, tk::spline f_new, tk::spline g, 
+                  tk::spline TAU, double *T, double *R_EYE, double *R_DISP, 
                   double *W_DISP, double *r_disp){
     // Splines
     std::vector<double> X(N+1), Y(N+1);
@@ -49,34 +49,30 @@ void get_pressure(double *P, tk::spline f_init, tk::spline f_new, double *g,
     // j=0 case
     r_disp[1] = r_disp[0] + dr*(1+(T[1] - T[0])/(dr*(1+SIGMA))); 
     for (int j = 1; j < N; j++){ 
-       double updated_r = r(M,j) + r_disp[j];        
-       double up_back_r = r(M,j-1) + r_disp[j-1];    
        r_disp[j+1] = r_disp[j] + dr*
         (
         (T[j]+(1+SIGMA)*r(M,j)-SIGMA*r_disp[j])*std::sqrt(
-            ( 1+std::pow((g[j+1]-g[j-1])/(2*dr),2) )
-            / (1+std::pow((f_new(updated_r)-f_new(up_back_r))/(updated_r-up_back_r),2))  
+            ( 1+std::pow((g(r(M,j+1))-g(r(M,j-1)))/(2*dr),2) )
+            / (1+std::pow((f_new(r_disp[j])-f_new(r_disp[j-1]))/(r_disp[j]-r_disp[j-1]),2))  
             )/r(M,j)             
         ); 
     }
-    
+    /*  
     // SOR for T (T[0] = T[N] = 0)
     // T[1] T[N-1]?
     for (int j = 2; j < N-1; j++){
-        double r_plus_two = r(M,j+2)+r_disp[j+2]; 
-        double r_minus_two = r(M,j-2)+r_disp[j-2];
-        double updated_r = r(M,j)+r_disp[j]; 
         T[j] = (   (  (SIGMA*T[j+1]+(1-SIGMA*SIGMA)*(r_disp[j+1]))*std::sqrt(
             ( 1+std::pow((g[j+2]-g[j])/(2*dr),2) )
-            / (1+std::pow((f_new(r_plus_two)-f_new(updated_r))/(r_plus_two-updated_r),2))  
-            )/r(M,j+1) - (TAU[j+2]-TAU[j])*T[j+1]/(2*dr*T[j+1])  ) 
+            / (1+std::pow((f_new(r_disp[j+2])-f_new(r_disp[j]))/(r_disp[j+2]-r_disp[j]),2))  
+            )/r(M,j+1) - (TAU[j+2]-TAU[j])*T[j+1]/(2*dr*TAU[j+1])  ) 
             -  
             (  (SIGMA*T[j-1]+(1-SIGMA*SIGMA)*(r_disp[j-1]))*std::sqrt(
             ( 1+std::pow((g[j]-g[j-2])/(2*dr),2) )
-            / (1+std::pow((f_new(updated_r)-f_new(r_minus_two))/(updated_r-r_minus_two),2))  
-            )/r(M,j-1) - (TAU[j]-TAU[j-2])*T[j-1]/(2*dr*T[j-1])  )   
+            / (1+std::pow((f_new(r_disp[j])-f_new(r_disp[j-2]))/(r_disp[j]-r_disp[j-2]),2))  
+            )/r(M,j-1) - (TAU[j]-TAU[j-2])*T[j-1]/(2*dr*TAU[j-1])  )   
             )*dr/(-4) - (T[j+1]+T[j-1])/(-2); 
     }
+    */
 }
 
 
@@ -93,20 +89,22 @@ int main(int argc, char *argv[]){
     double DEPTH;       // cm,          depth of eye
     double DELTA;       // cm,          convergence condition
     double *P;          // dynes
-    double *g;          // cm           g->lens shape 
-    double *TAU;        // cm           lens thickness
     
-    std::vector<double> data_R, data_Z;
+    std::vector<double> data_R, data_Z, lens_R, lens_Z, tau_R, tau_Z;
 
     if (argc != 6) { usage(); }
    
-    read_config(argv, &M, &N, &P, &E, &SIGMA, &R_EDGE, &DEPTH, &DELTA, 
-                &g, &TAU, &data_R, &data_Z); 
+    read_config(argv, &P, &DEPTH, &DELTA, 
+                &data_R, &data_Z, &lens_R, &lens_Z, &tau_R, &tau_Z); 
     dr = R_EDGE/(double)N;
     dz = DEPTH/(double)M;
 
-    tk::spline f_init, f_new;
+    tk::spline f_init, f_new, g, tau;
     f_init.set_points(data_R, data_Z);
+
+    g.set_points(lens_R, lens_Z);
+    tau.set_points(tau_R, tau_Z);
+
 
 
     // Populate R and W
@@ -127,11 +125,11 @@ int main(int argc, char *argv[]){
     // Populate R_EYE and T_EYE, r_disp
     double *R_EYE = new double[N+1];
     double *T_EYE = new double[N+1];
-    double *r_disp = new double[N+1];
+    double *disp_r_cl = new double[N+1];
     for (size_t j =0; j<N+1; j++){
         R_EYE[j] = j*EYE_EDGE/N;
         T_EYE[j] = 0.00;
-        r_disp[j] = 0.00;
+        disp_r_cl[j] = r(M,j);
     }
 
 	// Setup timer
@@ -144,10 +142,19 @@ int main(int argc, char *argv[]){
     
     while (curr_diff > DELTA){
 		max_diff = 0;
-        
+        /*
         if (count%20 == 0){
-            get_pressure(P, f_init, f_new, g, TAU, T_EYE, R_EYE, R[M], W[M], r_disp);
+            get_pressure(P, f_init, f_new, g, tau, T_EYE, R_EYE, R[M], W[M], disp_r_cl);
+        }*/
+        
+        for (int i = 0; i <500; i++){    
+            get_pressure(P, f_init, f_new, g, tau, T_EYE, R_EYE, R[M], W[M], disp_r_cl);
         }
+
+        //for (int i=0; i<N+1; i++) std::cout << disp_r_cl[i] << ",\n";
+
+        exit(0);
+        
         for (size_t i = 0; i < M+1; i++){
             memcpy(W_old[i], W[i], sizeof(double)*(N+1));         
         }
@@ -330,8 +337,7 @@ int main(int argc, char *argv[]){
 	delete [] P;
     delete [] R_EYE;
     delete [] T_EYE;
-    delete [] TAU;
-    delete [] r_disp;
+    delete [] disp_r_cl;
 
     return 0;
 }
