@@ -33,9 +33,11 @@
 int M,N;
 double dr, dz, E, SIGMA, R_EDGE, EYE_EDGE;
 
-void get_pressure(double *P, tk::spline f_init, tk::spline f_new, tk::spline g, 
-                  tk::spline TAU, double *T, double *R_EYE, double *R_DISP, 
-                  double *W_DISP, double *r_disp){
+void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g, 
+                  tk::spline tau, double **T, double *R_EYE, double *R_DISP, 
+                  double *W_DISP, double **r_disp){
+    double OMEGA_P = 1;
+ 
     // Splines
     std::vector<double> X(N+1), Y(N+1);
     for (int i=0; i<N+1; i++){
@@ -47,32 +49,57 @@ void get_pressure(double *P, tk::spline f_init, tk::spline f_new, tk::spline g,
      
     // Forward Euler for r_disp
     // j=0 case
-    r_disp[1] = r_disp[0] + dr*(1+(T[1] - T[0])/(dr*(1+SIGMA))); 
+    (*r_disp)[1] = (*r_disp)[0] + dr*(1+((*T)[1] - (*T)[0])/(dr*(1+SIGMA))); 
     for (int j = 1; j < N; j++){ 
-       r_disp[j+1] = r_disp[j] + dr*
+       (*r_disp)[j+1] = (*r_disp)[j] + dr*
         (
-        (T[j]+(1+SIGMA)*r(M,j)-SIGMA*r_disp[j])*std::sqrt(
+        ((*T)[j]+(1+SIGMA)*r(M,j)-SIGMA*(*r_disp)[j])*std::sqrt(
             ( 1+std::pow((g(r(M,j+1))-g(r(M,j-1)))/(2*dr),2) )
-            / (1+std::pow((f_new(r_disp[j])-f_new(r_disp[j-1]))/(r_disp[j]-r_disp[j-1]),2))  
+            / (1+std::pow((f_new((*r_disp)[j])-f_new((*r_disp)[j-1]))
+                    /((*r_disp)[j]-(*r_disp)[j-1]),2))  
             )/r(M,j)             
         ); 
     }
-    /*  
-    // SOR for T (T[0] = T[N] = 0)
-    // T[1] T[N-1]?
-    for (int j = 2; j < N-1; j++){
-        T[j] = (   (  (SIGMA*T[j+1]+(1-SIGMA*SIGMA)*(r_disp[j+1]))*std::sqrt(
-            ( 1+std::pow((g[j+2]-g[j])/(2*dr),2) )
-            / (1+std::pow((f_new(r_disp[j+2])-f_new(r_disp[j]))/(r_disp[j+2]-r_disp[j]),2))  
-            )/r(M,j+1) - (TAU[j+2]-TAU[j])*T[j+1]/(2*dr*TAU[j+1])  ) 
+      
+    double old, gs;
+    // SOR for T (T[0] = T[1] = T[N] = 0)
+    for (int j = 2; j < N; j++){
+        old = (*T)[j];
+        gs = 
+            (   
+             (SIGMA*(*T)[j+1]+(1-SIGMA*SIGMA)*((*r_disp)[j+1]))
+             * std::sqrt(( 1+std::pow((g(r(M,j+1))-g(r(M,j)))/(dr),2) )
+             / (1+std::pow((f_new((*r_disp)[j+1])-f_new((*r_disp)[j]))
+                     /((*r_disp)[j+1]-(*r_disp)[j]),2))  
+             )/r(M,j+1)  
             -  
-            (  (SIGMA*T[j-1]+(1-SIGMA*SIGMA)*(r_disp[j-1]))*std::sqrt(
-            ( 1+std::pow((g[j]-g[j-2])/(2*dr),2) )
-            / (1+std::pow((f_new(r_disp[j])-f_new(r_disp[j-2]))/(r_disp[j]-r_disp[j-2]),2))  
-            )/r(M,j-1) - (TAU[j]-TAU[j-2])*T[j-1]/(2*dr*TAU[j-1])  )   
-            )*dr/(-4) - (T[j+1]+T[j-1])/(-2); 
+             (SIGMA*(*T)[j-1]+(1-SIGMA*SIGMA)*((*r_disp)[j-1]-r(M,j-1)))
+             * std::sqrt(( 1+std::pow((g(r(M,j))-g(r(M,j-1)))/(dr),2) )
+             / (1+std::pow((f_new((*r_disp)[j])-f_new((*r_disp)[j-1]))
+                     /((*r_disp)[j]-(*r_disp)[j-1]),2))  
+             )/r(M,j-1)  
+            )*( -dr/4 )
+            - ( (*T)[j+1]*( (tau(r(M,j+1))-tau(r(M,j)))/(dr*tau(r(M,j+1))) )
+               -(*T)[j-1]*( (tau(r(M,j))-tau(r(M,j-1)))/(dr*tau(r(M,j-1))) ) )*( -dr/4 )
+            + ((*T)[j+1] + (*T)[j-1])/2; 
+        (*T)[j] = old + OMEGA_P*(gs - old);
     }
-    */
+
+    // SOR for P
+    (*P)[0] = (*P)[1];    // first-derivatitve = 0 at origin.
+    (*P)[N] = (*P)[N-1];  // first-derivatitve = 0 at CL_edge.
+    for (int j = 1; j<N; j++){
+        old = (*P)[j];
+        double f_prime_f = (f_new((*r_disp)[j+1])-f_new((*r_disp)[j]))/((*r_disp)[j+1]-(*r_disp)[j]);
+        double f_prime_b = (f_new((*r_disp)[j])-f_new((*r_disp)[j-1]))/((*r_disp)[j]-(*r_disp)[j-1]);
+        gs = -E/(r(M,j)*(1-SIGMA*SIGMA))*(
+            (tau(r(M,j+1))-tau(r(M,j)))/dr * ((*T)[j+1]-(*T)[j])/dr
+            * f_prime_f/std::sqrt(1+std::pow(f_prime_f,2))
+            -  
+            (tau(r(M,j))-tau(r(M,j-1)))/dr * ((*T)[j]-(*T)[j-1])/dr
+            * f_prime_b/std::sqrt(1+std::pow(f_prime_b,2)) );
+        (*P)[j] = old + OMEGA_P*(gs - old);
+    }
 }
 
 
@@ -98,7 +125,7 @@ int main(int argc, char *argv[]){
                 &data_R, &data_Z, &lens_R, &lens_Z, &tau_R, &tau_Z); 
     dr = R_EDGE/(double)N;
     dz = DEPTH/(double)M;
-
+    
     tk::spline f_init, f_new, g, tau;
     f_init.set_points(data_R, data_Z);
 
@@ -147,14 +174,14 @@ int main(int argc, char *argv[]){
             get_pressure(P, f_init, f_new, g, tau, T_EYE, R_EYE, R[M], W[M], disp_r_cl);
         }*/
         
-        for (int i = 0; i <500; i++){    
-            get_pressure(P, f_init, f_new, g, tau, T_EYE, R_EYE, R[M], W[M], disp_r_cl);
+        for (int i = 0; i <10; i++){    
+            get_pressure(&P, f_init, f_new, g, tau, &T_EYE, R_EYE, R[M], W[M], &disp_r_cl);
         }
 
-        //for (int i=0; i<N+1; i++) std::cout << disp_r_cl[i] << ",\n";
+        for (int i=0; i<N+1; i++) std::cout << disp_r_cl[i] << ",\n";
 
-        exit(0);
-        
+        exit(0); 
+
         for (size_t i = 0; i < M+1; i++){
             memcpy(W_old[i], W[i], sizeof(double)*(N+1));         
         }
