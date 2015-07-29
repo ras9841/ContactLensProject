@@ -62,9 +62,8 @@ void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g,
     }
       
     double old, gs;
-    // SOR for T (T[0] = T[N] = 0)
+    // SOR for T (T[0] = 0)
     (*T)[0] = 0;
-    (*T)[N] = 0;
     // case at j=1
     int j=1;
     old = (*T)[j];
@@ -81,7 +80,7 @@ void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g,
              )*( 1/(2*dr) ) 
             - (tau(r(M,j+1))-tau(r(M,j)))/(dr*tau(r(M,j+1)))*(*T)[j+1]/(2*dr)
             - ( (*T)[2]/(dr*dr) ) 
-            )/(-2/(dr*dr)-SIGMA/(2*dr*r(M,1)));
+            )/(-2/(dr*dr)+SIGMA/(2*dr*r(M,1)));
             
     (*T)[j] = old + OMEGA_P*(gs - old);
 
@@ -107,12 +106,14 @@ void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g,
             
         (*T)[j] = old + OMEGA_P*(gs - old);
     }
-    
+    (*T)[N] = 0;
+
     
     (*P)[0] = (*P)[1];    // first-derivatitve = 0 at origin.
     for (int j = 1; j<N; j++){
         double f_prime_f = (f_new((*r_disp)[j+1])-f_new((*r_disp)[j]))/((*r_disp)[j+1]-(*r_disp)[j]);
         double f_prime_b = (f_new((*r_disp)[j])-f_new((*r_disp)[j-1]))/((*r_disp)[j]-(*r_disp)[j-1]);
+        
         (*P)[j] = -(E/(r(M,j)*(1-SIGMA*SIGMA)*2*dr))*(
             tau(r(M,j+1)) * (*T)[j+1]
             * f_prime_f/(std::sqrt(1+std::pow(f_prime_f,2)))
@@ -129,7 +130,6 @@ void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g,
             -  
             tau(r(M,N-1)) * (*T)[N-1]
             * f_prime_b/std::sqrt(1+std::pow(f_prime_b,2)) );
-    //std::cout << (f_new((*r_disp)[1])-f_new((*r_disp)[0]))/((*r_disp)[1]-(*r_disp)[0]) << ",\n";
 }
 
 
@@ -205,18 +205,12 @@ int main(int argc, char *argv[]){
         } 
        */
         
-        for (int i = 0; i < 100000; i++){    
+        for (int i = 0; i < 50000; i++){    
             get_pressure(&P, f_init, f_new, g, tau, &T_cl, R_EYE, R[M], W[M], &disp_r_cl);
-            //printf("R: %lf\t\tT: %lf\n", disp_r_cl[2], T_cl[2]);
-            //char a;
-            //std::cin >> a;
         }
         
-
-        //for (int i=0; i<N+1; i++) std::cout << P[i] << ",\n";
-        //for (int i=0; i<N+1; i++) std::cout << disp_r_cl[i] << ",\n";
-       // for (int i=0; i<N+1; i++) std::cout << T_cl[i] << ",\n";
-
+        write_output(P, T_cl, disp_r_cl);
+        //for (int i = 0; i < N+1; i++) std::cout << g(r(M,i)) << ",\n";
         exit(0); 
 
         for (size_t i = 0; i < M+1; i++){

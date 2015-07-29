@@ -9,6 +9,7 @@ extern int M, N;
 
 void usage();
 void print_disp(double**function);
+void write_output(double *P, double *T, double *BIG_R);
 void write_csv(double **function, char ch);
 double r(int i, int j);
 void read_config(char *filenames[], double **P, double *DEPTH, double *DELTA,

@@ -51,6 +51,24 @@ void print_disp(double **function){
 	std::cout << "\n\n";
 }
 
+void write_output(double *P, double *T, double *R)
+{
+    std::ofstream p, t, r;
+    p.open("P.csv");
+    t.open("T.csv");
+    r.open("R.csv");
+    for (int i =0; i<N+1; i++)
+    {
+        p << P[i] << ",\n";
+        t << T[i] << ",\n";
+        r << R[i] << ",\n";
+    }
+    p.close();
+    t.close();
+    r.close();
+}
+
+
 // write_csv() writes the specified function in the same manner that
 // print_disp() prints.
 //
@@ -167,30 +185,24 @@ void read_config(char *filenames[], double **P, double *DEPTH, double *DELTA,
 
     double r, z;
     //  Eye Shape
-    data_R->resize(N+1);
-    data_Z->resize(N+1);
-    for (int i = 0; i<N+1; i++){
-        fscanf(eyeFile, "%lf%*c %lf%*c", &r, &z);
-        (*data_R)[i] = r;
-        (*data_Z)[i] = z;
+    while (fscanf(eyeFile, "%lf%*c %lf%*c", &r, &z) != EOF)
+    {
+        data_R->push_back(r);
+        data_Z->push_back(z);
     }
     
     //  Lens Shape
-    lens_R->resize(N+1);
-    lens_Z->resize(N+1);
-    for (int i = 0; i<N+1; i++){
-        fscanf(clFile, "%lf%*c %lf%*c", &r, &z);
-        (*lens_R)[i] = r;
-        (*lens_Z)[i] = z;
+    while (fscanf(clFile, "%lf%*c %lf%*c", &r, &z) != EOF)
+    {   
+        lens_R->push_back(r);
+        lens_Z->push_back(z);
     }
     
     //  Lens Thickness (Tau)
-    tau_R->resize(N+1);
-    tau_Z->resize(N+1);
-    for (int i = 0; i<N+1; i++){
-        fscanf(tauFile, "%lf%*c %lf%*c", &r, &z);
-        (*tau_R)[i] = r;
-        (*tau_Z)[i] = z;
+    while (fscanf(tauFile, "%lf%*c %lf%*c", &r, &z) != EOF)
+    {
+        tau_R->push_back(r);
+        tau_Z->push_back(z);
     }
     
 
