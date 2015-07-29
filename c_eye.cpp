@@ -62,16 +62,38 @@ void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g,
     }
       
     double old, gs;
-    // SOR for T (T[0] = T[1] = T[N] = 0)
-    for (int j = 2; j < N; j++){
-        old = (*T)[j];
-        gs = 
-            (   
-             (SIGMA*(*T)[j+1]+(1-SIGMA*SIGMA)*((*r_disp)[j+1]))
+    // SOR for T (T[0] = T[N] = 0)
+    (*T)[0] = 0;
+    (*T)[N] = 0;
+    // case at j=1
+    int j=1;
+    old = (*T)[j];
+    gs = 
+            (   (
+             (SIGMA*(*T)[j+1]+(1-SIGMA*SIGMA)*((*r_disp)[j+1] - r(M,j+1)))
              * std::sqrt(( 1+std::pow((g(r(M,j+1))-g(r(M,j)))/(dr),2) )
              / (1+std::pow((f_new((*r_disp)[j+1])-f_new((*r_disp)[j]))
                      /((*r_disp)[j+1]-(*r_disp)[j]),2))  
-             )/r(M,j+1)  
+             )/r(M,j+1)    
+            -  
+             ( (1-SIGMA*SIGMA)*(((*r_disp)[0]+(*r_disp)[1])/2 - (r(M,0)+r(M,1))/2 )
+             )*2/(r(M,0)+r(M,1))
+             )*( 1/(2*dr) ) 
+            - (tau(r(M,j+1))-tau(r(M,j)))/(dr*tau(r(M,j+1)))*(*T)[j+1]/(2*dr)
+            - ( (*T)[2]/(dr*dr) ) 
+            )/(-2/(dr*dr)-SIGMA/(2*dr*r(M,1)));
+            
+    (*T)[j] = old + OMEGA_P*(gs - old);
+
+    for (j = 2; j < N; j++){
+        old = (*T)[j];
+        gs = 
+            (   
+             (SIGMA*(*T)[j+1]+(1-SIGMA*SIGMA)*((*r_disp)[j+1] - r(M,j+1) ))
+             * std::sqrt(( 1+std::pow((g(r(M,j+1))-g(r(M,j)))/(dr),2) )
+             / (1+std::pow((f_new((*r_disp)[j+1])-f_new((*r_disp)[j]))
+                     /((*r_disp)[j+1]-(*r_disp)[j]),2))  
+             )/r(M,j+1)    
             -  
              (SIGMA*(*T)[j-1]+(1-SIGMA*SIGMA)*((*r_disp)[j-1]-r(M,j-1)))
              * std::sqrt(( 1+std::pow((g(r(M,j))-g(r(M,j-1)))/(dr),2) )
@@ -82,24 +104,32 @@ void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g,
             - ( (*T)[j+1]*( (tau(r(M,j+1))-tau(r(M,j)))/(dr*tau(r(M,j+1))) )
                -(*T)[j-1]*( (tau(r(M,j))-tau(r(M,j-1)))/(dr*tau(r(M,j-1))) ) )*( -dr/4 )
             + ((*T)[j+1] + (*T)[j-1])/2; 
+            
         (*T)[j] = old + OMEGA_P*(gs - old);
     }
-
-    // SOR for P
+    
+    
     (*P)[0] = (*P)[1];    // first-derivatitve = 0 at origin.
-    (*P)[N] = (*P)[N-1];  // first-derivatitve = 0 at CL_edge.
     for (int j = 1; j<N; j++){
-        old = (*P)[j];
         double f_prime_f = (f_new((*r_disp)[j+1])-f_new((*r_disp)[j]))/((*r_disp)[j+1]-(*r_disp)[j]);
         double f_prime_b = (f_new((*r_disp)[j])-f_new((*r_disp)[j-1]))/((*r_disp)[j]-(*r_disp)[j-1]);
-        gs = -E/(r(M,j)*(1-SIGMA*SIGMA))*(
-            (tau(r(M,j+1))-tau(r(M,j)))/dr * ((*T)[j+1]-(*T)[j])/dr
+        (*P)[j] = -(E/(r(M,j)*(1-SIGMA*SIGMA)*2*dr))*(
+            tau(r(M,j+1)) * (*T)[j+1]
+            * f_prime_f/(std::sqrt(1+std::pow(f_prime_f,2)))
+            -  
+            tau(r(M,j-1)) * (*T)[j-1]
+            * f_prime_b/(std::sqrt(1+std::pow(f_prime_b,2))) );
+    }
+    
+    double f_prime_f = (f_new((*r_disp)[N])-f_new((*r_disp)[N-1]))/((*r_disp)[N]-(*r_disp)[N-1]);
+    double f_prime_b = (f_new((*r_disp)[N-1])-f_new((*r_disp)[N-2]))/((*r_disp)[N-1]-(*r_disp)[N-2]);
+    (*P)[N] = -E/(r(M,N)*(1-SIGMA*SIGMA)*dr)*(
+            tau(r(M,N)) * (*T)[N]
             * f_prime_f/std::sqrt(1+std::pow(f_prime_f,2))
             -  
-            (tau(r(M,j))-tau(r(M,j-1)))/dr * ((*T)[j]-(*T)[j-1])/dr
+            tau(r(M,N-1)) * (*T)[N-1]
             * f_prime_b/std::sqrt(1+std::pow(f_prime_b,2)) );
-        (*P)[j] = old + OMEGA_P*(gs - old);
-    }
+    //std::cout << (f_new((*r_disp)[1])-f_new((*r_disp)[0]))/((*r_disp)[1]-(*r_disp)[0]) << ",\n";
 }
 
 
@@ -132,9 +162,7 @@ int main(int argc, char *argv[]){
     g.set_points(lens_R, lens_Z);
     tau.set_points(tau_R, tau_Z);
 
-
-
-    // Populate R and W
+        // Populate R and W
 	double **R = new double*[M+1];
 	double **W = new double*[M+1];
     double **W_old = new double*[M+1];
@@ -151,11 +179,11 @@ int main(int argc, char *argv[]){
     
     // Populate R_EYE and T_EYE, r_disp
     double *R_EYE = new double[N+1];
-    double *T_EYE = new double[N+1];
+    double *T_cl = new double[N+1];
     double *disp_r_cl = new double[N+1];
     for (size_t j =0; j<N+1; j++){
         R_EYE[j] = j*EYE_EDGE/N;
-        T_EYE[j] = 0.00;
+        T_cl[j] = 0.00;
         disp_r_cl[j] = r(M,j);
     }
 
@@ -171,14 +199,23 @@ int main(int argc, char *argv[]){
 		max_diff = 0;
         /*
         if (count%20 == 0){
-            get_pressure(P, f_init, f_new, g, tau, T_EYE, R_EYE, R[M], W[M], disp_r_cl);
-        }*/
+            for (int i=0; i<500; i++){
+                get_pressure(&P, f_init, f_new, g, tau, &T_cl, R_EYE, R[M], W[M], &disp_r_cl);
+            }
+        } 
+       */
         
-        for (int i = 0; i <10; i++){    
-            get_pressure(&P, f_init, f_new, g, tau, &T_EYE, R_EYE, R[M], W[M], &disp_r_cl);
+        for (int i = 0; i < 100000; i++){    
+            get_pressure(&P, f_init, f_new, g, tau, &T_cl, R_EYE, R[M], W[M], &disp_r_cl);
+            //printf("R: %lf\t\tT: %lf\n", disp_r_cl[2], T_cl[2]);
+            //char a;
+            //std::cin >> a;
         }
+        
 
-        for (int i=0; i<N+1; i++) std::cout << disp_r_cl[i] << ",\n";
+        //for (int i=0; i<N+1; i++) std::cout << P[i] << ",\n";
+        //for (int i=0; i<N+1; i++) std::cout << disp_r_cl[i] << ",\n";
+       // for (int i=0; i<N+1; i++) std::cout << T_cl[i] << ",\n";
 
         exit(0); 
 
@@ -363,7 +400,7 @@ int main(int argc, char *argv[]){
 	delete [] W;	
 	delete [] P;
     delete [] R_EYE;
-    delete [] T_EYE;
+    delete [] T_cl;
     delete [] disp_r_cl;
 
     return 0;
