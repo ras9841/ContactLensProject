@@ -109,7 +109,16 @@ void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g,
     (*T)[N] = 0;
 
     
-    (*P)[0] = (*P)[1];    // first-derivatitve = 0 at origin.
+    double GAMMA = ((*r_disp)[1] - (*r_disp)[0])/(dr);
+    /*(*P)[0] = -2*(((GAMMA-1)*(1+SIGMA)*tau(r(M,0))*GAMMA*E)/(1-SIGMA*SIGMA))
+            * (
+                2*f_new((*r_disp)[0])/( ((*r_disp)[0] - (*r_disp)[1])*((*r_disp)[0] - (*r_disp)[2]) )
+              + 2*f_new((*r_disp)[1])/( ((*r_disp)[1] - (*r_disp)[0])*((*r_disp)[1] - (*r_disp)[2]) )
+              + 2*f_new((*r_disp)[2])/( ((*r_disp)[2] - (*r_disp)[0])*((*r_disp)[2] - (*r_disp)[1]) ) 
+              );
+   */
+ 
+    (*P)[0] = ((*P)[1] + (*P)[2] +(*P)[3])/3;
     for (int j = 1; j<N; j++){
         double f_prime_f = (f_new((*r_disp)[j+1])-f_new((*r_disp)[j]))/((*r_disp)[j+1]-(*r_disp)[j]);
         double f_prime_b = (f_new((*r_disp)[j])-f_new((*r_disp)[j-1]))/((*r_disp)[j]-(*r_disp)[j-1]);
@@ -205,7 +214,7 @@ int main(int argc, char *argv[]){
         } 
        */
         
-        for (int i = 0; i < 50000; i++){    
+        for (int i = 0; i < 100000; i++){    
             get_pressure(&P, f_init, f_new, g, tau, &T_cl, R_EYE, R[M], W[M], &disp_r_cl);
         }
         
