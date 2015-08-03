@@ -32,7 +32,6 @@
 
 int M,N;
 double dr, dz, E, SIGMA, R_EDGE, EYE_EDGE;
-
 void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g, 
                   tk::spline tau, double **T, double *R_EYE, double *R_DISP, 
                   double *W_DISP, double **r_disp){
@@ -117,28 +116,6 @@ void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g,
               + 2*f_new((*r_disp)[2])/( ((*r_disp)[2] - (*r_disp)[0])*((*r_disp)[2] - (*r_disp)[1]) ) 
               );
    */
- 
-    (*P)[0] = ((*P)[1] + (*P)[2] +(*P)[3])/3;
-    for (int j = 1; j<N; j++){
-        double f_prime_f = (f_new((*r_disp)[j+1])-f_new((*r_disp)[j]))/((*r_disp)[j+1]-(*r_disp)[j]);
-        double f_prime_b = (f_new((*r_disp)[j])-f_new((*r_disp)[j-1]))/((*r_disp)[j]-(*r_disp)[j-1]);
-        
-        (*P)[j] = -(E/(r(M,j)*(1-SIGMA*SIGMA)*2*dr))*(
-            tau(r(M,j+1)) * (*T)[j+1]
-            * f_prime_f/(std::sqrt(1+std::pow(f_prime_f,2)))
-            -  
-            tau(r(M,j-1)) * (*T)[j-1]
-            * f_prime_b/(std::sqrt(1+std::pow(f_prime_b,2))) );
-    }
-    
-    double f_prime_f = (f_new((*r_disp)[N])-f_new((*r_disp)[N-1]))/((*r_disp)[N]-(*r_disp)[N-1]);
-    double f_prime_b = (f_new((*r_disp)[N-1])-f_new((*r_disp)[N-2]))/((*r_disp)[N-1]-(*r_disp)[N-2]);
-    (*P)[N] = -E/(r(M,N)*(1-SIGMA*SIGMA)*dr)*(
-            tau(r(M,N)) * (*T)[N]
-            * f_prime_f/std::sqrt(1+std::pow(f_prime_f,2))
-            -  
-            tau(r(M,N-1)) * (*T)[N-1]
-            * f_prime_b/std::sqrt(1+std::pow(f_prime_b,2)) );
 }
 
 
@@ -206,22 +183,12 @@ int main(int argc, char *argv[]){
     
     while (curr_diff > DELTA){
 		max_diff = 0;
-        /*
-        if (count%20 == 0){
+        if (count%100 == 0){
             for (int i=0; i<500; i++){
                 get_pressure(&P, f_init, f_new, g, tau, &T_cl, R_EYE, R[M], W[M], &disp_r_cl);
             }
         } 
-       */
         
-        for (int i = 0; i < 100000; i++){    
-            get_pressure(&P, f_init, f_new, g, tau, &T_cl, R_EYE, R[M], W[M], &disp_r_cl);
-        }
-        
-        write_output(P, T_cl, disp_r_cl);
-        //for (int i = 0; i < N+1; i++) std::cout << g(r(M,i)) << ",\n";
-        exit(0); 
-
         for (size_t i = 0; i < M+1; i++){
             memcpy(W_old[i], W[i], sizeof(double)*(N+1));         
         }
@@ -389,6 +356,7 @@ int main(int argc, char *argv[]){
 
 	write_csv(R, 'R');
 	write_csv(W, 'W');
+    write_output(P, T_cl, disp_r_cl);
 	
     #ifdef OCTAVE	
     std::system("octave display.m");

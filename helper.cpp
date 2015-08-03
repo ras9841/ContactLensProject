@@ -55,8 +55,8 @@ void write_output(double *P, double *T, double *R)
 {
     std::ofstream p, t, r;
     p.open("P.csv");
-    t.open("T.csv");
-    r.open("R.csv");
+    t.open("T_CL.csv");
+    r.open("R_CL.csv");
     for (int i =0; i<N+1; i++)
     {
         p << P[i] << ",\n";
