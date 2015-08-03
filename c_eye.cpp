@@ -206,22 +206,12 @@ int main(int argc, char *argv[]){
     
     while (curr_diff > DELTA){
 		max_diff = 0;
-        /*
-        if (count%20 == 0){
+        if (count%100 == 0){
             for (int i=0; i<500; i++){
                 get_pressure(&P, f_init, f_new, g, tau, &T_cl, R_EYE, R[M], W[M], &disp_r_cl);
             }
         } 
-       */
         
-        for (int i = 0; i < 100000; i++){    
-            get_pressure(&P, f_init, f_new, g, tau, &T_cl, R_EYE, R[M], W[M], &disp_r_cl);
-        }
-        
-        write_output(P, T_cl, disp_r_cl);
-        //for (int i = 0; i < N+1; i++) std::cout << g(r(M,i)) << ",\n";
-        exit(0); 
-
         for (size_t i = 0; i < M+1; i++){
             memcpy(W_old[i], W[i], sizeof(double)*(N+1));         
         }
@@ -389,6 +379,7 @@ int main(int argc, char *argv[]){
 
 	write_csv(R, 'R');
 	write_csv(W, 'W');
+    write_output(P, T_cl, disp_r_cl);
 	
     #ifdef OCTAVE	
     std::system("octave display.m");
