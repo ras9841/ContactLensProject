@@ -31,13 +31,15 @@
 #define OMEGA_LOW 1//1.38
 
 int M,N;
-double dr, dz, E, SIGMA, R_EDGE, EYE_EDGE;
+double dr, dz, E_EYE, E_LENS, SIGMA_EYE, SIGMA_LENS, R_EDGE, EYE_EDGE;
 void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g, 
                   tk::spline tau, double **T, double *R_EYE, double *R_DISP, 
                   double *W_DISP, double **r_disp){
     double OMEGA_P = 1;
- 
+    double SIGMA = SIGMA_LENS;
+    double E = E_LENS;
     // Splines
+
     std::vector<double> X(N+1), Y(N+1);
     for (int i=0; i<N+1; i++){
         X[i] = R_EYE[i] + R_DISP[i]; 
@@ -109,34 +111,33 @@ void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g,
 
     
     double GAMMA = ((*r_disp)[1] - (*r_disp)[0])/(dr);
-    /*(*P)[0] = -2*(((GAMMA-1)*(1+SIGMA)*tau(r(M,0))*GAMMA*E)/(1-SIGMA*SIGMA))
+    /*(*P)[0] = (-2)*(-2)*(((GAMMA-1)*(1+SIGMA)*tau(r(M,0))*GAMMA*E)/(1-SIGMA*SIGMA));
             * (
                 2*f_new((*r_disp)[0])/( ((*r_disp)[0] - (*r_disp)[1])*((*r_disp)[0] - (*r_disp)[2]) )
               + 2*f_new((*r_disp)[1])/( ((*r_disp)[1] - (*r_disp)[0])*((*r_disp)[1] - (*r_disp)[2]) )
               + 2*f_new((*r_disp)[2])/( ((*r_disp)[2] - (*r_disp)[0])*((*r_disp)[2] - (*r_disp)[1]) ) 
               );
-   */
-
+    */
 	(*P)[0] = ((*P)[1] + (*P)[2] +(*P)[3])/3;
     for (int j = 1; j<N; j++){
 		double f_prime_f = (f_new((*r_disp)[j+1])-f_new((*r_disp)[j]))/((*r_disp)[j+1]-(*r_disp)[j]);
        	double f_prime_b = (f_new((*r_disp)[j])-f_new((*r_disp)[j-1]))/((*r_disp)[j]-(*r_disp)[j-1]);
          
-       	(*P)[j] = -(E/(r(M,j)*(1-SIGMA*SIGMA)*2*dr))*(
-         	tau(r(M,j+1)) * (*T)[j+1]
+       	(*P)[j] = -(E/(r(M,j)*(1-SIGMA*SIGMA)*dr))*(
+         	(tau(r(M,j+1))+tau(r(M,j)))/2 * ((*T)[j+1]+(*T)[j])/2
             * f_prime_f/(std::sqrt(1+std::pow(f_prime_f,2)))
             -  
-            tau(r(M,j-1)) * (*T)[j-1]
+            (tau(r(M,j))+tau(r(M,j-1)))/2 * ((*T)[j-1]+(*T)[j])/2
             * f_prime_b/(std::sqrt(1+std::pow(f_prime_b,2))) );
-     }
+    } 
      
 	double f_prime_f = (f_new((*r_disp)[N])-f_new((*r_disp)[N-1]))/((*r_disp)[N]-(*r_disp)[N-1]);
     double f_prime_b = (f_new((*r_disp)[N-1])-f_new((*r_disp)[N-2]))/((*r_disp)[N-1]-(*r_disp)[N-2]);
 	(*P)[N] = -E/(r(M,N)*(1-SIGMA*SIGMA)*dr)*(
-             tau(r(M,N)) * (*T)[N]
+	        (tau(r(M,N))+tau(r(M,N-1)))/2 * ((*T)[N]+(*T)[N-1])/2
              * f_prime_f/std::sqrt(1+std::pow(f_prime_f,2))
              -  
-             tau(r(M,N-1)) * (*T)[N-1]
+	        (tau(r(M,N-1))+tau(r(M,N-2)))/2 * ((*T)[N-1]+(*T)[N-2])/2
              * f_prime_b/std::sqrt(1+std::pow(f_prime_b,2)) );
 }
 
@@ -189,6 +190,7 @@ int main(int argc, char *argv[]){
     double *R_EYE = new double[N+1];
     double *T_cl = new double[N+1];
     double *disp_r_cl = new double[N+1];
+    
     for (size_t j =0; j<N+1; j++){
         R_EYE[j] = j*EYE_EDGE/N;
         T_cl[j] = 0.00;
@@ -202,19 +204,18 @@ int main(int argc, char *argv[]){
 	
     double curr_diff = 100.0, max_diff, old, gs, diff;
     size_t count = 0;
-    
+    double SIGMA = SIGMA_EYE;
+    double E = E_EYE;   
     while (curr_diff > DELTA){
 		max_diff = 0;
-        if (count%100 == 0){
+        if (count%200 == 0){
             for (int i=0; i<500; i++){
                 get_pressure(&P, f_init, f_new, g, tau, &T_cl, R_EYE, R[M], W[M], &disp_r_cl);
             }
         } 
-        
         for (size_t i = 0; i < M+1; i++){
             memcpy(W_old[i], W[i], sizeof(double)*(N+1));         
         }
-
         // (0,0) (lower left corner
         R[0][0] = 0;
         

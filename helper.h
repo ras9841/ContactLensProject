@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "spline.h"
 
-extern double dr, dz, E, SIGMA, R_EDGE, EYE_EDGE;
+extern double dr, dz, E_EYE, E_LENS, SIGMA_EYE, SIGMA_LENS, R_EDGE, EYE_EDGE;
 extern int M, N;
 
 void usage();

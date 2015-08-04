@@ -150,13 +150,23 @@ void read_config(char *filenames[], double **P, double *DEPTH, double *DELTA,
    
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%s", &buff2);
-    fscanf(pFile, "%lf", &E);
-    printf("%s %s \t\t%e\n", buff, buff2, E); 
+    fscanf(pFile, "%lf", &E_EYE);
+    printf("%s %s \t\t%e\n", buff, buff2, E_EYE); 
     
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%s", &buff2);
-    fscanf(pFile, "%lf", &SIGMA);
-    printf("%s \t\t\t%g\n", buff, buff2, SIGMA);   
+    fscanf(pFile, "%lf", &SIGMA_EYE);
+    printf("%s \t\t\t%g\n", buff, buff2, SIGMA_EYE);   
+    
+    fscanf(pFile, "%s", &buff);
+    fscanf(pFile, "%s", &buff2);
+    fscanf(pFile, "%lf", &E_LENS);
+    printf("%s %s \t\t%e\n", buff, buff2, E_LENS); 
+    
+    fscanf(pFile, "%s", &buff);
+    fscanf(pFile, "%s", &buff2);
+    fscanf(pFile, "%lf", &SIGMA_LENS);
+    printf("%s \t\t\t%g\n", buff, buff2, SIGMA_LENS);   
     
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%s", &buff2);
