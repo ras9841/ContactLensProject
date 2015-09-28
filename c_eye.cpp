@@ -29,9 +29,20 @@
 //
 #define OMEGA 1//1.3
 #define OMEGA_LOW 1//1.38
+#define OMEGA_INT 1.8
 
 int M,N;
 double dr, dz, E_EYE, E_LENS, SIGMA_EYE, SIGMA_LENS, R_EDGE, EYE_EDGE;
+
+double Pressure(tk::spline P, double j){
+	if (r(j,j) > R_EDGE){
+		return 0.0;
+	}
+	else {
+		return P(r(j,j));
+	}
+}	
+
 void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g, 
                   tk::spline tau, double **T, double *R_EYE, double *R_DISP, 
                   double *W_DISP, double **r_disp){
@@ -165,13 +176,19 @@ int main(int argc, char *argv[]){
     dr = R_EDGE/(double)N;
     dz = DEPTH/(double)M;
     
-    tk::spline f_init, f_new, g, tau;
+    //  Build r_l in respect to contact lens
+    std::vector<double> r_l_VEC;  
+    for (size_t i = 0; i < R_EDGE; i+dr){
+   		r_l_VEC.push_back(r(i,i));
+	}	
+
+    tk::spline f_init, f_new, g, tau, Pspline;
     f_init.set_points(data_R, data_Z);
 
     g.set_points(lens_R, lens_Z);
     tau.set_points(tau_R, tau_Z);
 
-        // Populate R and W
+    // Populate R and W
 	double **R = new double*[M+1];
 	double **W = new double*[M+1];
     double **W_old = new double*[M+1];
@@ -208,10 +225,15 @@ int main(int argc, char *argv[]){
     double E = E_EYE;   
     while (curr_diff > DELTA){
 		max_diff = 0;
-        if (count%200 == 0){
-            for (int i=0; i<500; i++){
+        if (count%800 == 0){
+            for (size_t i=0; i<500; i++){
                 get_pressure(&P, f_init, f_new, g, tau, &T_cl, R_EYE, R[M], W[M], &disp_r_cl);
             }
+			std::vector<double> Pvec;
+			for(size_t j=0; j<N+1; j++){
+				Pvec.push_back(P[j]);
+			}
+			Pspline.set_points(r_l_VEC, Pvec);
         } 
         for (size_t i = 0; i < M+1; i++){
             memcpy(W_old[i], W[i], sizeof(double)*(N+1));         
@@ -251,7 +273,7 @@ int main(int argc, char *argv[]){
         gs = 4*W[M-1][N]/3 - W[M-2][N]/3 
                 - ( 2*dz*SIGMA/( 3*(1-SIGMA) ) )*(
                 (3*R[M][N]-4*R[M][N-1]+R[M][N-2])/(2*dr)+R[M][N]/r(M,N))
-                - 2*dz*P[N]*(1+SIGMA)*(1-2*SIGMA)/(3*(1-SIGMA)*E);
+                - 2*dz*Pressure(Pspline,N)*(1+SIGMA)*(1-2*SIGMA)/(3*(1-SIGMA)*E);
         W[M][N] = old + OMEGA*(gs-old);
         
  
@@ -281,7 +303,7 @@ int main(int argc, char *argv[]){
 
             old = W[M][j];
             gs = W[M-1][j] 
-				- dz*(1 + SIGMA)*(1 - 2*SIGMA)*P[j]/((1 - SIGMA)*E) 
+				- dz*(1 + SIGMA)*(1 - 2*SIGMA)*Pressure(Pspline, j)/((1 - SIGMA)*E) 
 				- ( dz*SIGMA / (1 - SIGMA) )*
 				(
 					(R[M][j+1] - R[M][j-1])/(2*dr)
@@ -333,7 +355,7 @@ int main(int argc, char *argv[]){
 					+ 2*(1-2*SIGMA)/( dz*dz )
 					+ 1/( r(i,j)*r(i,j) )
 					);
-				R[i][j] = old + 1.6*(gs-old);
+				R[i][j] = old + OMEGA_INT*(gs-old);
                 if ( (diff = std::abs(old-R[i][j])) > max_diff ){
                     max_diff = diff;
                 }
@@ -350,7 +372,7 @@ int main(int argc, char *argv[]){
 					  ) / (1-2*SIGMA) 
 					)
 					/ ( 2/(dr*dr)+4*(1-SIGMA)/(dz*dz*(1-2*SIGMA)) );
-			    W[i][j] = old + 1.6*(gs-old);
+			    W[i][j] = old + OMEGA_INT*(gs-old);
             }
         }
         
