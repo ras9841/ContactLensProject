@@ -1,0 +1,7 @@
+Grid: 230
+Young's Modulus: 10e6    
+Poisson's Ratio: .4
+Contact Radius(cm): 1
+Eye Radius(cm): 1       
+Eye Depth(cm: 1
+Delta(cm): 1e-15

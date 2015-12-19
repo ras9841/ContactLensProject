@@ -229,11 +229,12 @@ int main(int argc, char *argv[]){
             for (size_t i=0; i<500; i++){
                 get_pressure(&P, f_init, f_new, g, tau, &T_cl, R_EYE, R[M], W[M], &disp_r_cl);
             }
-			std::vector<double> Pvec;
+			std::vector<double> Pvec, R_l_VEC;
 			for(size_t j=0; j<N+1; j++){
 				Pvec.push_back(P[j]);
+				R_l_VEC.push_back(disp_r_cl[j]);
 			}
-			Pspline.set_points(r_l_VEC, Pvec);
+			Pspline.set_points(R_l_VEC, Pvec);
         } 
         for (size_t i = 0; i < M+1; i++){
             memcpy(W_old[i], W[i], sizeof(double)*(N+1));         
