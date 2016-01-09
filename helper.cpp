@@ -156,23 +156,23 @@ void read_config(char *filenames[], double **P, double *DEPTH, double *DELTA,
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%s", &buff2);
     fscanf(pFile, "%lf", &SIGMA_EYE);
-    printf("%s \t\t\t%g\n", buff, buff2, SIGMA_EYE);   
-    
+    printf("%s %s\t\t%g\n", buff, buff2, SIGMA_EYE);   
+   
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%s", &buff2);
     fscanf(pFile, "%lf", &E_LENS);
     printf("%s %s \t\t%e\n", buff, buff2, E_LENS); 
-    
+   
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%s", &buff2);
     fscanf(pFile, "%lf", &SIGMA_LENS);
-    printf("%s \t\t\t%g\n", buff, buff2, SIGMA_LENS);   
+    printf("%s %s\t\t%g\n", buff, buff2, SIGMA_LENS);   
     
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%s", &buff2);
     fscanf(pFile, "%lf", &R_EDGE);
     printf("%s %s \t\t%g\n", buff, buff2, R_EDGE);
-    
+
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%s", &buff2);
     fscanf(pFile, "%lf", &EYE_EDGE);
@@ -182,7 +182,7 @@ void read_config(char *filenames[], double **P, double *DEPTH, double *DELTA,
     fscanf(pFile, "%s", &buff2);
     fscanf(pFile, "%lf", DEPTH);
     printf("%s %s \t\t\t%g\n", buff, buff2, *DEPTH);
-    
+
     fscanf(pFile, "%s", &buff);
     fscanf(pFile, "%lf", DELTA);
     printf("%s \t\t\t%e\n\n", buff, *DELTA);  
