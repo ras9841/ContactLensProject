@@ -1,3 +1,12 @@
+//
+// File:	helper.cpp
+//
+// Contains the implementation of visualization functions, data IO
+// functions, and other misc. functions.
+//
+// @author Roland Sanford <ras9841@rit.edu>
+
+
 #include "helper.h"
 #include "spline.h"
 #include <iostream>

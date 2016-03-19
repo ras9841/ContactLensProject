@@ -23,6 +23,7 @@
 #include <vector>
 #include "helper.h"
 #include "spline.h"
+#include "derivs.h"
 
 //
 // Macros
@@ -31,7 +32,7 @@
 #define OMEGA_LOW 1//1.38
 #define OMEGA_INT 1.8
 
-int M,N;
+int M, N;
 double dr, dz, E_EYE, E_LENS, SIGMA_EYE, SIGMA_LENS, R_EDGE, EYE_EDGE;
 
 double Pressure(tk::spline P, double j){
@@ -43,9 +44,14 @@ double Pressure(tk::spline P, double j){
 	}
 }	
 
-void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g, 
-                  tk::spline tau, double **T, double *R_EYE, double *R_DISP, 
-                  double *W_DISP, double **r_disp){
+
+// f(r) represents the eye shape 
+// g(r) represents the lens shape
+void get_pressure(double **P, tk::spline f_init, tk::spline f_new, 
+				tk::spline g, tk::spline tau, double **T, 
+				double *R_EYE, double *R_DISP, double *W_DISP, 
+				double **r_disp)
+{
     double OMEGA_P = 1;
     double SIGMA = SIGMA_LENS;
     double E = E_LENS;
@@ -162,6 +168,8 @@ void get_pressure(double **P, tk::spline f_init, tk::spline f_new, tk::spline g,
 // Postconditions:
 //		R and W equilibrium values calculated 
 //		for each point (i,j) on the grid.
+//
+// NOTE: All indexing is [row][column]
 int main(int argc, char *argv[]){
     double DEPTH;       // cm,          depth of eye
     double DELTA;       // cm,          convergence condition
