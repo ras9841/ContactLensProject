@@ -66,14 +66,14 @@ first run through. This process continues continues until a predefined convergen
 condition is satisfied. GSM convergence requires the matrix `A` to be strictly 
 diagonally dominant, or symmetric and positive definite. 
     
-###<a name="2.2"></a>2.2 Finite-difference method [[top](#clp)]
+###<a name="2.2"></a>2.2 Finite-difference method
 We discretized the governing partial differntial equations (PDEs) and boundary conditions 
 using finite-difference method (FDM). FDM uses the values of a point and it's neighbors 
 to approximate derivatives at that point. Combinations of forward, backward, and central 
 finite difference equations were used thoughout the computational grid. Currently,
 a global second-order accuracy is held throughout the simulation.
   
-###<a name="2.3"></a>2.3 Computational grid [[top](#clp)]
+###<a name="2.3"></a>2.3 Computational grid
 We reprensent the eye as a radially-symmetric cylinder. Consequently, we only need 
 sole the domain from the center of the eye to an edge to solve the system. The eye 
 is mapped to an `MxN` grid. The variable `i` is used to represent rows and height, 
@@ -89,7 +89,7 @@ As a whole, the grid can be viewed as follows:
 ```
 Note: `[]` denotes array indexing in C (zero-based). 
   
-###<a name="2.4"></a>2.4 General pseudocode [[top](#clp)]
+###<a name="2.4"></a>2.4 General pseudocode
 Here, we present a high-level overview of the simulation. 
 ```
 Initialize the displacement functions R and W to be M+1xN+1 arrays.
