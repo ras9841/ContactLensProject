@@ -1,9 +1,0 @@
-Grid: 115
-Young's Modulus(Eye): 1e6    
-Poisson's Ratio(Eye): .25
-Young's Modulus(Lens): 1e6    
-Poisson's Ratio(Lens): .05
-Contact Radius(cm): 1
-Eye Radius(cm): 2       
-Eye Depth(cm: 1
-Delta(cm): 1e-15
