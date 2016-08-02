@@ -15,16 +15,17 @@ Maintained by Roland Sanford (<ras9841@rit.edu>).
 
 ##<a name="1"></a>1. Setup [[top](#clp)]
 ###<a name="1.1"></a>1.1 Development Conditions
-The code for `c_eye.cpp` was written in C++ using the gcc (GCC) 4.9.2 (Red Hat 4.9.2-6) GNU compiler.
- 
+The code for this project was written in C++ using the gcc (GCC) 4.9.2 (Red Hat 4.9.2-6) GNU compiler.
+WARNING: this repository is under active development, so the current repo head may not compile.
+
 ###<a name="1.2"></a>1.2 Compiling and Running
-The information below details how to compile and run the `c_eye.cpp` file for various operating systems.
-You can either clone the repository or download `c_eye.cpp` (and `build`, if you are running Linux).
+The information below details how to compile and run the project's code for various operating systems.
+You can either clone or download the repository (and `build`, if you are running Linux).
 
 ####Linux
 Open a terminal and navigate to the main project directory. Type 
 ```{r, engine='bash'}
-$ g++ -o <executable name> c_eye.cpp
+$ g++ -o <executable name> c_eye.cpp helper.cpp
 ```
 to manually compile the program. To run, enter
 ```{r, engine='bash'}

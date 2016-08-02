@@ -1,1 +1,1 @@
-g++ -fopenmp -DOCTAVE -ggdb -o clp c_eye.cpp helper.cpp derivs.cpp
+g++ -DOCTAVE -ggdb -o clp c_eye.cpp helper.cpp
